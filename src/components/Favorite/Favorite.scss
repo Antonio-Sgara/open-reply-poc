@@ -1,0 +1,22 @@
+.Favorite__loader .LoaderWidgetAbsoluteMiddle {
+  top: 30px;
+  left: 30px;
+}
+
+.favoriteIcon {
+  display: inline;
+  font-size: 22px;
+
+  &:hover {
+    cursor: pointer;
+    opacity: 0.8;
+  }
+
+  &.icon-star {
+    color: #92a6bc;
+  }
+
+  &.icon-star-select {
+    color: #ffb900;
+  }
+}

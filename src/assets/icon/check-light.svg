@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="20px" height="20px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 62 (91390) - https://sketch.com -->
+    <!--<title>icon/check-light</title>-->
+    <desc>Created with Sketch.</desc>
+    <g id="icon/check-light" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="check" fill="#FFD949" fill-rule="nonzero">
+            <path d="M10,0 C4.50742188,0 0,4.50742188 0,10 C0,15.4925781 4.50742188,20 10,20 C15.4925781,20 20,15.4925781 20,10 C20,4.50742187 15.4925781,0 10,0 Z M8.78980469,14.5484375 L4.41070313,10.169375 L6.0678125,8.51226562 L8.86648438,11.3109375 L14.4849609,6.2034375 L16.0619531,7.93722656 L8.78980469,14.5484375 Z" id="Shape"></path>
+        </g>
+    </g>
+</svg>

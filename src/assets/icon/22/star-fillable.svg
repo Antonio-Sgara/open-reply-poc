@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="22px" height="22px" viewBox="0 0 22 22" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >
+    <!-- Generator: Sketch 62 (91390) - https://sketch.com -->
+    <!--<title>icon/22/star-fillable</title>-->
+    <desc>Created with Sketch.</desc>
+    <g id="icon/22/star-fillable" stroke="none" stroke-width="1" fill="#FFB900" fill-rule="evenodd">
+        <g id="star-2" transform="translate(0.000000, 0.500000)" fill="#FFB900">
+            <defs>
+                <linearGradient id="fill0">
+                    <stop offset="0%" stop-color="#FFB900"/>
+                    <stop offset="0%" stop-color="#e9edf2" stop-opacity="1" />
+                </linearGradient>
+                <linearGradient id="fill25">
+                    <stop offset="25%" stop-color="#FFB900"/>
+                    <stop offset="25%" stop-color="#e9edf2" stop-opacity="1" />
+                </linearGradient>
+                <linearGradient id="fill50">
+                    <stop offset="50%" stop-color="#FFB900"/>
+                    <stop offset="50%" stop-color="#e9edf2" stop-opacity="1" />
+                </linearGradient>
+                <linearGradient id="fill75">
+                    <stop offset="75%" stop-color="#FFB900"/>
+                    <stop offset="75%" stop-color="#e9edf2" stop-opacity="1" />
+                </linearGradient>
+                <linearGradient id="fill100">
+                    <stop offset="100%" stop-color="#FFB900"/>
+                    <stop offset="100%" stop-color="#e9edf2" stop-opacity="1" />
+                </linearGradient>
+            </defs>
+            <path d="M14.6608972,6.29683655 L11.7666221,0.487105251 C11.6171482,0.188589214 11.3122997,0 10.9797306,0 C10.6451952,0 10.3403206,0.190553257 10.1921988,0.492797736 L7.33587054,6.31970593 L7.18288151,6.43157816 L0.752099343,7.38634045 C0.417443628,7.43874645 0.145983842,7.66738403 0.0427300396,7.9831401 C-0.0613513124,8.30142687 0.028205008,8.65324189 0.273240369,8.88471647 L4.93650042,13.3977234 L4.99576366,13.5782337 L3.91644253,19.9771049 C3.85852031,20.3047855 3.99539071,20.6376365 4.27191627,20.8349025 C4.41518733,20.9407093 4.59747694,21 4.78195627,21 C4.92933501,21 5.06835496,20.9647455 5.19891478,20.89307 L10.934522,17.8585586 L11.1238677,17.8580084 L16.8799352,20.8607081 C17.01365,20.9275394 17.1494194,20.9604691 17.2874726,20.9604691 C17.7699972,20.9604691 18.1654498,20.5655422 18.1654498,20.0840501 C18.1654498,20.0026295 18.1562826,19.9343771 18.1303019,19.8428753 L17.0308138,13.541175 L17.0890102,13.3603805 L21.7314571,8.81362662 C21.9724858,8.59170601 22.0616774,8.23944561 21.9563196,7.91725525 C21.8532006,7.60191143 21.5820402,7.37292673 21.2536958,7.32147506 L14.8146011,6.40772384 L14.6608972,6.29683655 Z" id="Shape"></path>
+        </g>
+    </g>
+</svg>

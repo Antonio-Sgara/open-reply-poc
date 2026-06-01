@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "baseUrl": ".",
+    "resolveJsonModule": true,
+    "paths": {
+      "assets/*": ["src/assets/*"],
+      "authentication/*": ["src/authentication/*"],
+      "components/*": ["src/components/*"],
+      "connected-react-router": ["src/shims/connected-react-router.ts"],
+      "hooks/*": ["src/hooks/*"],
+      "hoc/*": ["src/hoc/*"],
+      "lodash": ["src/shims/lodash.ts"],
+      "model/*": ["src/model/*"],
+      "moment": ["src/shims/moment.ts"],
+      "pages/*": ["src/pages/*"],
+      "qs": ["src/shims/qs.ts"],
+      "react-device-detect": ["src/shims/react-device-detect.ts"],
+      "react-intl": ["src/shims/react-intl.tsx"],
+      "redux-devtools-extension": ["src/shims/redux-devtools-extension.ts"],
+      "styles/*": ["src/styles/*"],
+      "store/*": ["src/store/*"],
+      "tools/*": ["src/tools/*"],
+      "localization/*": ["src/localization/*"],
+      "react-dates/initialize": ["src/vendor/react-dates/initialize.ts"],
+      "react-dates/lib/css/_datepicker.css": ["src/vendor/react-dates/datepicker.css"],
+      "utils/*": ["src/utils/*"]
+    },
+    "types": ["vite/client", "node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": false,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react",
+
+    /* Linting */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "erasableSyntaxOnly": false,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}

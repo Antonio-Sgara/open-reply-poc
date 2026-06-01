@@ -1,0 +1,277 @@
+@import "../../styles/variables";
+@import "../../styles/mixin";
+
+%button__primary {
+  background-color: $color-blu-dark;
+  color: $color-white;
+}
+
+%button__secondary {
+  border-color: $color-blu-dark;
+  background-color: $color-white;
+  color: $color-blu-dark;
+}
+
+%button__tertiary {
+  background-color: $color-grey-lighter;
+  color: $color-blu-dark;
+}
+
+.button__container {
+  display: inline-block;
+}
+
+.button__ {
+  width: auto;
+  height: 48px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0;
+  margin: 0;
+  border-width: 2px;
+  border-style: solid;
+  border-color: $color-blu-dark;
+  opacity: 1;
+
+  &:not(.break-word) {
+    white-space: nowrap;
+  }
+
+  &.primary {
+    @extend %button__primary;
+
+    &:hover {
+      border-color: $color-blu-dark;
+      background-color: $color-blu-light;
+      color: $color-blu-dark;
+    }
+
+    &:disabled,
+    &:hover:disabled {
+      @extend %button__primary;
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+
+  &.secondary {
+    @extend %button__secondary;
+
+    &:hover {
+      border-color: $color-blu;
+      background-color: $color-white;
+      color: $color-blu;
+    }
+
+    &:disabled,
+    &:hover:disabled {
+      @extend %button__secondary;
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+
+  &.tertiary {
+    border-width: 0;
+    @extend %button__tertiary;
+
+    &:hover {
+      background-color: $color-blu-light;
+      color: $color-blu;
+    }
+
+    &:disabled,
+    &:hover:disabled {
+      @extend %button__tertiary;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  @include break(m, max) {
+    font-size: 13px;
+  }
+}
+
+.button__:focus {
+  outline: none;
+}
+
+.addCustomer__button {
+  .button__ {
+    @include break(m, max) {
+      font-size: 14px;
+    }
+  }
+}
+
+.button__contentWrapper {
+  width: 100%;
+  padding: 0 12px;
+  margin: 0;
+  @include flex-box;
+  @include flex-justify-space-between;
+  @include flex-align-items(center);
+
+  &.center {
+    @include flex-justify-space-around;
+    padding: 0 4px;
+    white-space: pre-wrap;
+  }
+
+  .button__contentWrapper {
+    @include break(m, max) {
+      padding: 150px;
+    }
+  }
+
+  .button__badge {
+    position: absolute;
+    right: -7px;
+    top: -15px;
+  }
+}
+
+.button__label {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+.button__icon {
+  font-size: 26px;
+  margin-left: 0;
+
+  @include break(m, max) {
+    font-size: 18px;
+  }
+}
+
+.button__label + .button__icon {
+  margin-left: 8px;
+}
+
+.button__loader#svgLoader {
+  height: 30px;
+  width: 30px;
+  position: relative;
+  margin: 9px auto;
+  top: auto;
+  left: auto;
+
+  svg g g {
+    fill: transparent !important;
+  }
+}
+
+$button-heights: (
+  regular: 48px,
+  thin: 40px,
+  icon-md: 48px,
+  icon-sm: 40px,
+  icon-xs: 30px
+);
+
+@each $size, $value in $button-heights {
+  .button__.#{$size} {
+    height: $value;
+  }
+
+  .button__.#{$size}_icon {
+    height: $value;
+  }
+}
+
+$button-widths: (
+  xl: 250px,
+  large: 200px,
+  regular: 160px,
+  regular-icon: 180px,
+  thin: 180px,
+  thin-icon: 180px,
+  icon-md: 48px,
+  icon-sm: 40px,
+  icon-xs: 30px
+);
+
+.button__container:not(.full-width) {
+  @each $size, $value in $button-widths {
+    .button__.#{$size} {
+      width: $value;
+
+      @include break(m, max) {
+        width: scaleToFactor($value, 0.9);
+      }
+    }
+  }
+}
+
+$icon-sizes: (icon-md, icon-sm, icon-xs, thin);
+
+@each $size in $icon-sizes {
+  .button__.#{$size} {
+    @if $size == icon-xs {
+      .button__contentWrapper {
+        padding: 0;
+        margin: 0 auto;
+        @include flex-justify-center;
+      }
+
+      &:not(.tertiary) {
+        border-width: 1px;
+      }
+    }
+
+    @if $size == icon-sm {
+      .button__contentWrapper {
+        padding: 0;
+        margin: 0 auto;
+        @include flex-justify-center;
+      }
+
+      &:not(.tertiary) {
+        border-width: 2px;
+      }
+    }
+
+    @if $size == icon-md {
+      .button__contentWrapper {
+        padding: 0;
+        margin: 0 auto;
+        @include flex-justify-center;
+      }
+
+      &:not(.tertiary) {
+        border-width: 2px;
+      }
+    }
+  }
+
+  .button__icon.#{$size} {
+    @if $size == icon-md {
+      width: 26px;
+      font-size: 26px;
+    } @else if $size == icon-sm {
+      width: 20px;
+      font-size: 20px;
+    } @else if $size == icon-xs {
+      width: 18px;
+      font-size: 18px;
+    } @else if $size == thin {
+      width: 18px;
+      font-size: 18px;
+    } @else {
+      width: 26px;
+      font-size: 26px;
+    }
+  }
+}
+
+.button__iconSmall {
+  .button__icon {
+    font-size: 16px;
+  }
+}

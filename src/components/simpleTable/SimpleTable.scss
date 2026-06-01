@@ -1,0 +1,251 @@
+@import "../../styles/variables";
+@import "../../styles/mixin";
+
+.SimpleTable__title {
+  color: rgb(38, 77, 122);
+
+  &.centered {
+    text-align: center;
+  }
+}
+
+.SimpleTable_description {
+  color: black;
+  font-size: 15px;
+  margin-bottom: 15px;
+  font-weight: 300;
+}
+
+.simpleTableTitle__numberOfElements {
+  margin-left: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(38, 77, 122, 0.5);
+}
+
+.simpleTable__columnNames {
+  font-size: 0.9rem;
+}
+
+.simpleTable__columnNames th {
+  font-weight: 400;
+  white-space: nowrap;
+  padding-bottom: 3px;
+}
+
+.simpleTable__tableRow {
+  @include box-shadow(0px, 2px, 6px, 0px, rgba(0, 0, 0, 0.15));
+  background: #fff;
+  border-radius: 10px;
+
+  &.row--selected {
+    outline: 1px solid $color-blu-dark;
+    outline-offset: 3px;
+  }
+}
+
+.simpleTable__tableRow_Pdf {
+  @include box-shadow(0px, 2px, 6px, 0px, rgba(0, 0, 0, 0.15));
+  background: #fcfbfb;
+
+  &.row--selected {
+    outline: 1px solid $color-blu-dark;
+    outline-offset: 3px;
+  }
+}
+
+.simpleTable__tableRow_Pdf_Header {
+  @include box-shadow(0px, 2px, 6px, 0px, rgba(0, 0, 0, 0.15));
+  background: #efeeee;
+
+  &.row--selected {
+    outline: 1px solid $color-blu-dark;
+    outline-offset: 3px;
+  }
+}
+
+.simpleTable_Header {
+  &.header-nag {
+    width: 10%;
+  }
+  &.header-dossier {
+    width: 6%;
+  }
+  &.header-fiscalCode {
+    width: 11%;
+  }
+  &.header-vatNumber {
+    width: 11%;
+  }
+  &.header-type {
+    width: 5%;
+  }
+  &.header-segnalazioni {
+    width: 8%;
+  }
+  &.header-consulenza {
+    width: 8%;
+  }
+  &.header-cluster {
+    width: 11%;
+  }
+  &.header-risk_Profile {
+    width: 9%;
+  }
+  &.header-Sostenibility_profile {
+    width: 7%;
+  }
+  &.header-aum {
+    width: 8%;
+  }
+}
+
+.tableListProduct {
+  &.header-not-blocking,
+  &.header-blocking {
+    width: 28px;
+    height: 25px;
+  }
+
+  &.header-absent {
+    width: 25px;
+    height: 10px;
+  }
+}
+
+.simpleTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 5px;
+
+  td {
+    font-size: 8px;
+    padding: 8px 10px 8px;
+
+    &.aum,
+    &.riskKiid {
+      text-align: end;
+    }
+  }
+}
+
+.widgetProductDetail__table {
+  overflow-x: scroll;
+}
+
+.simpleTable__tdMedium {
+  padding: 25px 10px 25px;
+  &.scalar {
+    @include break(m, max) {
+      padding: 19px 8px;
+    }
+  }
+}
+
+.simpleTable td:first-child,
+.simpleTable__tdMedium:first-child {
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+.simpleTable td:last-child,
+.simpleTable__tdMedium:last-child {
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.simpleTable__tdSmall {
+  padding: 15px 10px;
+  &.scalar {
+    @include break(m, max) {
+      padding: 10px 8px;
+    }
+  }
+
+  &.text-right {
+    text-align: end;
+  }
+}
+
+.simpleTable__tdSmall:first-child {
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+.simpleTable__tdSmall:last-child {
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.simpleTable td,
+.simpleTable th {
+  border-top: none;
+}
+
+.simpleTable thead th {
+  border-bottom: none;
+  text-transform: uppercase;
+  font-size: 12px;
+  padding-left: 10px;
+}
+
+.simpleTable td {
+  font-size: 14px;
+  vertical-align: middle;
+  height: 58px;
+  color: #373737;
+  font-weight: 300;
+}
+
+.simpleTable > th > td {
+  font-size: 14px;
+  vertical-align: middle;
+  height: 40px;
+  color: #373737;
+  font-weight: 300;
+}
+
+.simpleTable td > div {
+  vertical-align: middle;
+}
+
+.simpleTable__tableBadge {
+  padding: 5px 10px 5px 10px;
+  font-size: 0.9rem;
+}
+
+.simpleTable__getMore {
+  margin: auto;
+  text-align: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  color: #92a6bc;
+  margin-top: 20px;
+  &.spaced {
+    margin-bottom: 80px;
+  }
+}
+
+.simpleTable__wrapperBtn {
+  & + & {
+    margin-left: 4px;
+  }
+}
+
+.ProductListColums {
+  font-size: 0.9rem;
+}
+
+.simpleTable.scalar thead th {
+  @include break(m, max) {
+    font-size: 10px;
+  }
+}
+
+.simpleTable.scalar td {
+  @include break(m, max) {
+    font-size: 12px;
+    padding: 6px 4px;
+  }
+}

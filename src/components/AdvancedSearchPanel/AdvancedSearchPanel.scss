@@ -1,0 +1,66 @@
+@import "../../styles/variables";
+@import "../../styles/mixin";
+
+.AdvancedSearchPanel.sectionWrapper {
+  padding: 40px 25px;
+  width: 100%;
+
+  &.AdvancedSearchPanel--inverted {
+    background-color: $color-white;
+  }
+}
+
+.AdvancedSearchPanel__filters {
+  @include flex-box;
+  @include flex-wrap(wrap);
+  width: 100%;
+
+  .AdvancedSearchPanelFilters__filter {
+    width: calc((100%) / 3);
+    padding: 0 10px 20px 0;
+
+    &:nth-child(3n) {
+      padding-right: 0;
+    }
+
+    & > label {
+      font-size: 14px;
+      color: $color-blu-lighter;
+    }
+  }
+}
+
+.AdvancedSearchPanel__footer {
+  @include flex-box;
+  @include flex-flow(row, nowrap);
+  @include flex-justify-space-between;
+  margin-top: 60px;
+
+  & > div:last-child {
+    @include flex-box;
+
+    & > div:nth-last-child(2),
+    & > div:last-child {
+      margin-left: 15px;
+    }
+  }
+}
+
+.advancedSearchPanel__selectSpinner {
+  position: absolute;
+  bottom: -3px;
+  right: 10px;
+}
+
+.advancedSearchPanel__warningInfo {
+  color: #264d7aab;
+  width: 450px;
+  font-size: 15px;
+  gap: 10px;
+  margin-top: 20px;
+  background: #264d7a0a;
+  padding: 10px;
+  @include flex-box;
+  @include flex-align-items(center);
+  @include flex-justify-center;
+}

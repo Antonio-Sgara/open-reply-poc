@@ -1,0 +1,100 @@
+@import "../../../styles/variables";
+@import "../../../styles/mixin";
+
+.widgetProductsList {
+  padding-bottom: 60px;
+}
+
+.widgetProductsList__search {
+  display: inline-block;
+  width: auto;
+  margin-bottom: 60px;
+  @include flex-box;
+  @include flex-flow(row, nowrap);
+  @include flex-align-items(center);
+}
+
+.widgetProductsList__search--smallMargin {
+  @extend .widgetProductsList__search;
+  margin-bottom: 30px;
+}
+
+.widgetProductsList__title {
+  padding-bottom: 20px;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.notActive {
+  opacity: 0.3;
+}
+
+.widgetProductsList__scrollerAnchor {
+  position: relative;
+
+  & > div {
+    position: absolute;
+    left: 0;
+    top: -140px;
+    pointer-events: none;
+  }
+}
+
+.horizontalList_title {
+  @include flex-box;
+  @include flex-flow(row, nowrap);
+
+  div:not(:nth-child(3)) {
+    margin-right: 10px;
+  }
+}
+
+$svgFillStar: (
+  fill0: url(#fill0),
+  fill25: url(#fill25),
+  fill50: url(#fill50),
+  fill75: url(#fill75),
+  fill100: url(#fill100)
+);
+
+@each $class, $value in $svgFillStar {
+  .svgStarClass_#{$class} {
+    g {
+      g {
+        path {
+          fill: $value;
+        }
+      }
+    }
+  }
+}
+
+$svgFillLeaf: (
+  fill0: url(#fillLeaf0),
+  fill25: url(#fillLeaf25),
+  fill50: url(#fillLeaf50),
+  fill75: url(#fillLeaf75),
+  fill100: url(#fillLeaf100)
+);
+
+@each $class, $value in $svgFillLeaf {
+  .svgLeafClass_#{$class} {
+    g {
+      g {
+        path {
+          fill: $value;
+        }
+      }
+    }
+  }
+}
+
+.favoriteHeader i {
+  font-size: 16px;
+}
+
+.empty-table .simplebar-vertical {
+  visibility: hidden !important;
+}

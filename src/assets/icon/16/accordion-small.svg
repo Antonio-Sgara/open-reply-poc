@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id='arrow' width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 62 (91390) - https://sketch.com -->
+    <!--<title>icon/16/accordion-small</title>-->
+    <desc>Created with Sketch.</desc>
+    <g id="icon/16/accordion-small" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <path d="M5.49335125,7.93962917 L12.3396292,0.961606961 L11.1885901,-0.0603708303 L3.88932041,7.37936012 C3.5840543,7.69050051 3.5840543,8.18875783 3.88932041,8.49989822 L11.1885901,15.9396292 L11.1885901,15.9396292 L12.3396292,14.9176514 L5.49335125,7.93962917 Z" id="Path-4" fill="#264D7A" transform="translate(8.000000, 7.939629) scale(-1, 1) rotate(-90.000000) translate(-8.000000, -7.939629) "></path>
+    </g>
+</svg>

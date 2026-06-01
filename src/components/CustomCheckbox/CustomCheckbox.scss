@@ -1,0 +1,115 @@
+.CustomCheckbox {
+  display: inline-block;
+  width: auto;
+  margin-right: 10px;
+
+  &.preselected {
+    margin-right: 10px;
+  }
+}
+
+.CustomCheckbox__wrapper {
+  display: flex;
+  flex-flow: row nowrap;
+}
+
+.CustomCheckbox__labelWrapper {
+  margin: 0;
+  position: relative;
+}
+
+.CustomCheckbox__view {
+  width: 17px;
+  height: 17px;
+  border: 1px solid #264d7a;
+  background-color: #e9edf2;
+  display: inline-flex;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  text-align: center;
+
+  @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+    display: inline-block;
+  }
+
+  &.withSvgCheck {
+    border-radius: 2px;
+  }
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.CustomCheckbox__checkIcon {
+  display: none;
+  position: absolute;
+  z-index: 1;
+  cursor: pointer;
+
+  g {
+    fill: #264d7a;
+  }
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.CustomCheckbox__input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+
+  &.withSvgCheck:checked + .CustomCheckbox__checkIcon {
+    display: block;
+  }
+
+  &:not(.withSvgCheck):checked + .CustomCheckbox__view:after {
+    content: "";
+    width: 7px;
+    height: 7px;
+    background-color: #264d7a;
+    position: absolute;
+    border-radius: 100%;
+    margin: 4px;
+  }
+
+  &.withSvgCheck:not(:checked)
+    + .CustomCheckbox__checkIcon.Checked_AnagraphicAnswer {
+    g {
+      fill: #264d7a8c;
+    }
+
+    display: block;
+  }
+}
+
+.CustomCheckbox__text {
+  display: inline-block;
+}
+
+.CustomCheckbox__text__disabled {
+  color: #808080 !important;
+  cursor: not-allowed !important;
+}
+
+.CustomCheckBox__loader .LoaderWidgetAbsoluteMiddle {
+  top: 30px;
+  left: 27px;
+}
+
+.CustomCheckbox__view.Checked_AnagraphicAnswer::after,
+.CustomCheckbox__view.Checked_AnagraphicAnswer::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  background-color: #264d7a8c;
+  position: absolute;
+  border-radius: 100%;
+  margin: 4px;
+}

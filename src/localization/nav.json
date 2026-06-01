@@ -1,0 +1,17 @@
+{
+  "nav.home": "Home",
+  "nav.portfolio": "Portafoglio Clienti",
+  "nav.mifid": "Questionario MiFID",
+  "nav.guarantees": "Modulo Garanzie",
+  "nav.vision": "Vision",
+  "nav.catalogue": "Catalogo Prodotti",
+  "nav.extractions": "Estrazioni",
+  "nav.cruscotto": "Cruscotto",
+  "nav.investmentCenter": "Investment Center",
+  "nav.dashboard": "Dashboard",
+  "nav.logout": "Logout",
+  "nav.profile": "Profilo",
+  "nav.sbloccoCoolingOff": "Sblocco Cooling Off",
+  "nav.prospect": "Portafoglio Prospettico",
+  "nav.investiperGP": "InvestiPerGP"
+}

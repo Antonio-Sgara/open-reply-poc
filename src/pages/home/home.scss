@@ -1,0 +1,36 @@
+.homePage__wrapper {
+  padding-bottom: 60px;
+}
+
+.home__lastProposals {
+  margin-top: 60px;
+}
+
+.home__supervisorProposals {
+  margin-top: 10px;
+}
+
+.lastProposalsHome__extractProposalsButton {
+  position: relative;
+  width: 100%;
+
+  .button__container {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+}
+
+.lastProposalCustomerTitle {
+  display: flex;
+  justify-content: space-between;
+
+  .TitleWidget {
+    display: flex;
+    align-items: center;
+
+    h1 {
+      margin-bottom: 0;
+    }
+  }
+}

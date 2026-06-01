@@ -1,0 +1,184 @@
+//colors
+
+$color-white: #fff;
+
+$color-blu-dark: #264d7a;
+$color-blu: #3d9ae2;
+$color-blu-lighter: #92a6bc;
+$color-blu-light: #f5f6f8;
+
+$color-red: #ff3333;
+$color-dark-red: #c92323;
+$color-burnt-red: #e4710c;
+$color-green: #b2ce27;
+$color-badgeGrey: #9fa0a1;
+$color-orange: #ffb900;
+$color-teal: #2abb9c;
+$color-silver: #92a6bc;
+
+$color-bar-blue-light: #7bc8f8;
+$color-bar-blue-dark: #1b7bc7;
+
+$color-grey-lighter: #e9edf2;
+$color-grey-lightest: #f7f8f9;
+$color-grey-light: #f1f4f7;
+
+$color-black: #000000;
+$color-grey-10: #1a1a1a;
+$color-grey-15: #262626;
+$color-grey-25: #404040;
+$color-grey-30: #4d4d4d;
+$color-grey-35: #333333;
+$color-grey-40: #666666;
+$color-grey-50: #808080;
+$color-grey-70: #b3b3b3;
+$color-grey-75: #c0c0c0;
+$color-grey-80: #cccccc;
+$color-grey-85: #d9d9d9;
+$color-grey-90: #e6e6e6;
+$color-grey-95: #c1c1c1;
+$color-grey-96: #f5f5f5;
+$color-grey-98: #fafafa;
+
+$color-Loader-1: #c5d7ed;
+$color-Loader-2: #9ebde1;
+$color-Loader-3: #77a2d5;
+$color-Loader-4: #5088c8;
+$color-Loader-5: #376eaf;
+$color-Loader-6: #376eaf;
+
+$color-green-dark: #57ab2d;
+$color-green-light: #76d37e;
+
+//transparentized
+$color-red-transparentized: rgba(255, 51, 51, 0.1);
+
+/*Breakpoints*/
+$offMediaQueries: false !default;
+
+//stacked column chart colors
+$stackedColumnChart-colors: (
+  "sectorColor": rgba(86, 239, 180, 0.719),
+  "countryColor": #f6b528,
+  "spreadsColor": #64f551d7,
+  "marketColor": #34a7f9,
+  "styleColor": rgb(245, 222, 21),
+  "ratesColor": #036bf3,
+  "alternativeColor": #402cdbcb,
+  "fxColor": #885019,
+  "specificColor": #3f4346
+);
+
+:export {
+  darkBlu: $color-blu-dark;
+  burntRed: $color-burnt-red;
+  orange: $color-orange;
+  grey90: $color-grey-90;
+  darkRed: $color-dark-red;
+  greyLighter: $color-grey-lighter;
+  @each $key, $value in $stackedColumnChart-colors {
+    #{unquote($key)}: $value;
+  }
+}
+
+@mixin break($prefix, $type: false) {
+  @if $offMediaQueries == false {
+    @if $prefix == s {
+      @if $type == min {
+        @media only screen and (min-width: 0px) {
+          @content;
+        }
+      } @else if ($type == max) {
+        @media only screen and (max-width: 768px) {
+          @content;
+        }
+      } @else if ($type == min-max) {
+        @media only screen and (min-width: 0px) and (max-width: 768px) {
+          @content;
+        }
+      }
+    } @else if $prefix == m {
+      @if $type == min {
+        @media only screen and (min-width: 768px) {
+          @content;
+        }
+      } @else if ($type == max) {
+        @media only screen and (max-width: 1023px) {
+          @content;
+        }
+      } @else if ($type == min-max) {
+        @media only screen and (min-width: 768px) and (max-width: 1023px) {
+          @content;
+        }
+      }
+    } @else if $prefix == l {
+      @if $type == min {
+        @media only screen and (min-width: 1024px) {
+          @content;
+        }
+      } @else if ($type == max) {
+        @media only screen and (max-width: 1199px) {
+          @content;
+        }
+      } @else if ($type == min-max) {
+        @media only screen and (min-width: 1025px) and (max-width: 1199px) {
+          @content;
+        }
+      }
+    } @else if $prefix == xl {
+      @if ($type == min) or ($type == min-max) {
+        @media only screen and (min-width: 1200px) {
+          @content;
+        }
+      } @else {
+        @content;
+      }
+    } @else if $prefix == smTablet {
+      @if $type == min {
+        @media only screen and (min-width: 768px) {
+          @content;
+        }
+      } @else if ($type == max) {
+        @media only screen and (max-width: 991px) {
+          @content;
+        }
+      } @else if ($type == min-max) {
+        @media only screen and (min-width: 768px) and (max-width: 991px) {
+          @content;
+        }
+      }
+    } @else if $prefix == lgTablet {
+      @if $type == min {
+        @media only screen and (min-width: 992px) {
+          @content;
+        }
+      } @else if ($type == max) {
+        @media only screen and (max-width: 1023px) {
+          @content;
+        }
+      } @else if ($type == min-max) {
+        @media only screen and (min-width: 992px) and (max-width: 1023px) {
+          @content;
+        }
+      }
+    }
+  } @else if $offMediaQueries == true {
+    // ie8 Fix
+    @if $prefix == m {
+      @if $type == min {
+        @content;
+      }
+    }
+
+    @if $prefix == l {
+      @if $type == min {
+        @content;
+      }
+    }
+
+    @if $prefix == xl {
+      @content;
+    }
+  }
+}
+$bgColor-disabled: rgba(255, 255, 255, 0.2);

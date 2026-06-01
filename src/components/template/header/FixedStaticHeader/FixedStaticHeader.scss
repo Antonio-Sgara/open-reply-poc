@@ -1,0 +1,39 @@
+.c-note-head {
+  background-color: #264d7a;
+  max-height: 50px;
+  padding: 8px 0;
+  height: 40px;
+}
+
+.l-container-fluid {
+  width: 100%;
+  padding: 0 20px;
+  zoom: 1;
+}
+
+.c-iccrea-logo {
+  float: left;
+  width: 100%;
+  max-width: 157px;
+  height: 32.52px;
+
+  img,
+  svg {
+    width: 100%;
+    max-width: 157px;
+  }
+}
+
+.c-bcc-logo {
+  float: right;
+  max-width: 98px;
+  width: 100%;
+  text-align: right;
+  height: 32.52px;
+
+  img,
+  svg {
+    width: 100%;
+    max-width: 98px;
+  }
+}

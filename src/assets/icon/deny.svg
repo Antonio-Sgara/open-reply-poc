@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="20px" height="20px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 62 (91390) - https://sketch.com -->
+    <!--<title>icon/deny</title>-->
+    <desc>Created with Sketch.</desc>
+    <g id="icon/deny" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="cancel" fill="#FF3333" fill-rule="nonzero">
+            <path d="M10,0 C4.50742188,0 0,4.50742188 0,10 C0,15.4925781 4.50742188,20 10,20 C15.4925781,20 20,15.4925781 20,10 C20,4.50742187 15.4925781,0 10,0 Z M14.971875,13.3147656 L13.3147656,14.971875 L10,11.6571094 L6.68523438,14.971875 L5.028125,13.3147656 L8.34289063,10 L5.028125,6.68523437 L6.68523438,5.028125 L10,8.34289062 L13.3147656,5.028125 L14.971875,6.68523437 L11.6571094,10 L14.971875,13.3147656 Z" id="Shape"></path>
+        </g>
+    </g>
+</svg>

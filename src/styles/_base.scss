@@ -1,0 +1,323 @@
+body {
+  margin: 0;
+  font-family: "Roboto", "Segoe UI", "Oxygen", "Ubuntu", "Cantarell",
+    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #fcfbfb;
+  color: #373737;
+}
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+//reset
+button {
+  border: none;
+  margin: 0;
+  padding: 0;
+  width: auto;
+  overflow: visible;
+
+  background: transparent;
+
+  /* inherit font & color from ancestor */
+  color: inherit;
+  font: inherit;
+
+  /* Normalize `line-height`. Cannot be changed from `normal` in Firefox 4+. */
+  line-height: normal;
+
+  /* Corrects font smoothing for webkit */
+  -webkit-font-smoothing: inherit;
+  -moz-osx-font-smoothing: inherit;
+
+  /* Corrects inability to style clickable `input` types in iOS */
+  -webkit-appearance: none;
+}
+
+button:focus {
+  outline: none;
+}
+@mixin customContainer {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+//override bootstrap container
+.container,
+.container-sm,
+.container-md,
+.container-lg,
+.container-xl {
+  max-width: 1190px;
+  /*
+  @include break(s, max) {
+    @include customContainer;
+    margin: 0 20px;
+  }
+  */
+  &.customContainer {
+    @include break(m, max) {
+      @include customContainer;
+    }
+  }
+}
+
+//container
+.pageContainer {
+  max-width: 1440px;
+  min-width: 768px;
+  margin: auto;
+  background-color: #fcfbfb;
+  /* @include break(s, max) {
+    min-width: 1023px;
+    &.mobile,
+    &.tablet {
+      transform: scale(0.56);
+      transform-origin: 0% 0%;
+    }
+  }*/
+}
+
+//fullpage
+.fullPageContent {
+  padding: 20px 0;
+  & + & {
+    padding-top: 0;
+  }
+}
+.overviewSection__wrapper {
+  color: $color-white;
+  padding: 50px 50px 10px 50px;
+  background-repeat: no-repeat;
+}
+
+.overviewSection__wrapper--compact {
+  padding-top: 40px;
+  padding-bottom: 30px;
+  &.customContainers {
+    .container {
+      @include break(m, max) {
+        @include customContainer;
+      }
+      @include break(l, min-max) {
+        @include customContainer;
+      }
+    }
+  }
+}
+
+.modulePageContent {
+  padding: 20px 0;
+}
+.sectionWrapper {
+  padding: 40px 0;
+}
+.sectionWrapper--blueLight {
+  background-color: $color-blu-light;
+
+  &.inside__shadow {
+    box-shadow: inset 0 -10px 10px -10px rgba(0, 0, 0, 0.15);
+  }
+}
+.outside__shadow {
+  box-shadow: 0 10px 10px -10px rgba(0, 0, 0, 0.15);
+}
+/* tabs */
+.tabsPage {
+  margin: 20px 0 30px 0;
+}
+.tabsPage__link {
+  & + & {
+    margin-left: 30px;
+  }
+}
+
+.infoRelatedNAG {
+  font-style: italic;
+  font-size: 15px;
+  color: black;
+}
+
+//custom boostrap tab
+.tabsCustomSection {
+  margin-top: 40px;
+  .nav-link,
+  .nav-link.active {
+    border: 0;
+    background-color: transparent;
+    padding-left: 0;
+    padding-right: 30px;
+  }
+  &.nav-tabs {
+    border: 0;
+  }
+
+  &.wide {
+    a {
+      width: 100%;
+    }
+  }
+
+  &.noPadding {
+    a {
+      padding: 0;
+    }
+  }
+}
+
+.tabsCustomSection__content {
+  margin-top: 30px;
+}
+.tabsCustomSection__btnRestore {
+  margin-top: -88px;
+  margin-bottom: 40px;
+  text-align: right;
+
+  @include break(smTablet, max) {
+    margin-top: -30px;
+  }
+}
+
+.tabsCustomSection.needsAnalysis {
+  .nav-link.focus {
+    border: 0;
+  }
+  .nav-link,
+  .nav-link.active {
+    background: transparent;
+  }
+}
+
+//override modal bootstrap
+
+.modal-backdrop {
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  background-color: rgba(32, 32, 32, 0.7);
+
+  //-webkit-backdrop-filter: blur(5px);
+  //backdrop-filter: blur(5px);
+  //background-clip: padding-box;
+  //background-color: rgba(64, 64, 64, 0.7);
+}
+
+.modal-backdrop.show {
+  opacity: 1;
+}
+
+//icon
+
+#freccia-down {
+  fill: #ff3333;
+}
+
+#freccia-up {
+  fill: #b2ce27;
+}
+
+.no-padding {
+  padding: 0px;
+}
+
+.padding-sm {
+  padding: 10px;
+}
+
+.padding-md {
+  padding: 20px;
+}
+
+.mandatoryAsterisk {
+  color: #ff3333;
+}
+.mandatoryQuestion {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ff3333;
+}
+
+.innerTableExpand__ContentTitle {
+  font-size: 12px;
+}
+.cut-text {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.gap-column-colors {
+  &.LOW_GAP {
+    color: $color-green;
+  }
+  &.MEDIUM_GAP {
+    color: $color-orange;
+  }
+  &.HIGH_GAP {
+    color: $color-red;
+  }
+}
+
+$main-widths: (
+  "wdt5": 5%,
+  "wdt10": 10%,
+  "wdt15": 15%,
+  "wdt20": 20%,
+  "wdt25": 25%,
+  "wdt30": 30%,
+  "wdt35": 35%,
+  "wdt40": 40%,
+  "wdt45": 45%,
+  "wdt50": 50%,
+  "wdt55": 55%,
+  "wdt60": 60%,
+  "wdt65": 65%,
+  "wdt70": 70%,
+  "wdt75": 75%,
+  "wdt80": 80%,
+  "wdt85": 85%,
+  "wdt90": 90%,
+  "wdt95": 95%,
+  "wdt100": 100%
+);
+@each $key, $value in $main-widths {
+  .#{$key} {
+    width: $value;
+  }
+}
+
+$main-heights: (
+  "hgt5": 5%,
+  "hgt10": 10%,
+  "hgt15": 15%,
+  "hgt20": 20%,
+  "hgt25": 25%,
+  "hgt30": 30%,
+  "hgt35": 35%,
+  "hgt40": 40%,
+  "hgt45": 45%,
+  "hgt50": 50%,
+  "hgt55": 55%,
+  "hgt60": 60%,
+  "hgt65": 65%,
+  "hgt70": 70%,
+  "hgt75": 75%,
+  "hgt80": 80%,
+  "hgt85": 85%,
+  "hgt90": 90%,
+  "hgt95": 95%,
+  "hgt100": 100%
+);
+@each $key, $value in $main-heights {
+  .#{$key} {
+    height: $value;
+  }
+}

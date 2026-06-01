@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="46px" height="46px" viewBox="0 0 46 46" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <!--<title>illustrazione/functional/custom project copyblu</title>-->
+    <desc>Created with Sketch.</desc>
+    <g id="illustrazione/functional/custom-project-copyblu" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="002-target" transform="translate(3.000000, 1.000000)">
+            <g id="Group" transform="translate(5.379610, 24.039162)" fill="#264D7A">
+                <polygon id="Path" points="13.5563557 0.0708892091 7.66316703 16.3887429 6.39392625 19.9639981 0.047462039 19.9639981 2.31401302 13.5468577 7.11921909 0.0708892091"></polygon>
+                <polygon id="Path" points="29.241128 19.9639981 22.8946638 19.9639981 21.625423 16.3887429 15.7322343 0.0708892091 22.1693709 0.0708892091 26.974577 13.5468577"></polygon>
+            </g>
+            <ellipse id="Oval" fill="#92A6BC" cx="20.0239479" cy="20.1681555" rx="19.9460304" ry="20.1681555"></ellipse>
+            <ellipse id="Oval" fill="#E9EDF2" fill-rule="nonzero" cx="20.0239479" cy="20.1681555" rx="15.6847722" ry="15.8594427"></ellipse>
+            <ellipse id="Oval" fill="#92A6BC" cx="20.0239479" cy="20.1681555" rx="11.5142733" ry="11.6424998"></ellipse>
+            <ellipse id="Oval" fill="#E9EDF2" fill-rule="nonzero" cx="20.0239479" cy="20.1681555" rx="7.3437744" ry="7.42555692"></ellipse>
+            <ellipse id="Oval" fill="#92A6BC" cx="20.0239479" cy="20.1681555" rx="3.17318872" ry="3.20852632"></ellipse>
+            <path d="M35.0740998,7.51723913 L20.5678959,20.6264788 L20.4772234,20.6264788 L19.5705857,19.7097444 L19.5705857,19.6180622 L34.0767896,6.41714037 L34.167462,6.41714037 L34.9834273,7.33387471 C35.0740998,7.42555692 35.0740998,7.42555692 35.0740998,7.51723913 Z" id="Path" fill="#264D7A"></path>
+            <g id="Group" transform="translate(27.071584, 4.562177)" fill="#264D7A">
+                <polygon id="Path" points="6.00789588 3.87179664 0.749414317 8.63874502 0.0241214751 4.78853098 5.28260304 0.0214948716"></polygon>
+                <polygon id="Path" points="4.46663774 9.73884377 9.72511931 5.06348987 6.00789588 3.87179664 0.749414317 8.63874502"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,64 @@
+@import "../../styles/variables";
+@import "../../styles/mixin";
+
+.customSelect__indicator {
+  &.isFocus {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+.hideIndicatorsIcon span svg {
+  display: none;
+}
+
+.CustomSelect__wrapper {
+  width: 300px;
+  @include break(lgTablet, min-max) {
+    width: 200px;
+  }
+  @include break(smTablet, max) {
+    width: 200px;
+  }
+}
+
+.customSelect2 {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 0px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #fff;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: $color-blu-lighter;
+    border-radius: 10px;
+  }
+}
+
+.customSelect2_customIndicator {
+  margin-right: 10px;
+
+  img {
+    width: 12px;
+    height: 12px;
+    display: block;
+  }
+
+  &.whiteIndicator {
+    img {
+      filter: brightness(0) invert(1);
+    }
+  }
+
+  &.hiddenIndicator {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  &.disabledIndicator {
+    img {
+      opacity: 0.5;
+    }
+  }
+}

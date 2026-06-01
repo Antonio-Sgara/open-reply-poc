@@ -1,0 +1,29 @@
+@import "../../styles/variables";
+
+.currentDate {
+  font-size: 40px;
+  line-height: 40px;
+  font-weight: 300;
+  color: $color-white;
+  text-transform: capitalize;
+  vertical-align: middle;
+  margin-bottom: 36px;
+}
+
+.currentDate__icon {
+  width: 60px;
+  height: 60px;
+  display: inline-block;
+  margin-right: 28px;
+  margin-top: -6px;
+
+  img,
+  svg {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+.currentDate__date {
+  display: inline-block;
+}

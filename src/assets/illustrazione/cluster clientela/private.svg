@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="46px" height="46px" viewBox="0 0 46 46" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <!--<title>illustrazione/cluster clientela/private</title>-->
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M22.5837704,2.86587024 L40.5163139,35.3152347 C40.9996964,36.1899269 40.6824773,37.290864 39.807785,37.7742466 C39.5398325,37.9223256 39.2386904,38 38.9325435,38 L3.06745651,38 C2.0680841,38 1.2579327,37.1898486 1.2579327,36.1904762 C1.2579327,35.8843292 1.33560708,35.5831872 1.48368611,35.3152347 L19.4162296,2.86587024 C19.8996122,1.99117801 21.0005493,1.67395883 21.8752415,2.15734138 C22.1734035,2.32211509 22.4189967,2.56770829 22.5837704,2.86587024 Z" id="path-1"></path>
+    </defs>
+    <g id="illustrazione/cluster-clientela/private" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <path d="M23.5,3 L23.5,1 C23.5,0.723857625 23.2761424,0.5 23,0.5 C22.7238576,0.5 22.5,0.723857625 22.5,1 L22.5,3 C22.5,3.27614237 22.7238576,3.5 23,3.5 C23.2761424,3.5 23.5,3.27614237 23.5,3 Z" id="Line-4" fill="#FFD949" fill-rule="nonzero"></path>
+        <path d="M28,4 L28,2 C28,1.72385763 27.7761424,1.5 27.5,1.5 C27.2238576,1.5 27,1.72385763 27,2 L27,4 C27,4.27614237 27.2238576,4.5 27.5,4.5 C27.7761424,4.5 28,4.27614237 28,4 Z" id="Line-4-Copy" fill="#FFD949" fill-rule="nonzero" transform="translate(27.500000, 3.000000) rotate(40.000000) translate(-27.500000, -3.000000) "></path>
+        <path d="M19,4 L19,2 C19,1.72385763 18.7761424,1.5 18.5,1.5 C18.2238576,1.5 18,1.72385763 18,2 L18,4 C18,4.27614237 18.2238576,4.5 18.5,4.5 C18.7761424,4.5 19,4.27614237 19,4 Z" id="Line-4-Copy-2" fill="#FFD949" fill-rule="nonzero" transform="translate(18.500000, 3.000000) rotate(-40.000000) translate(-18.500000, -3.000000) "></path>
+        <g id="Group" transform="translate(2.000000, 4.000000)">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <use id="Triangle" fill="#D8D8D8" xlink:href="#path-1"></use>
+            <rect id="Rectangle" fill="#E9EDF2" fill-rule="nonzero" mask="url(#mask-2)" x="0" y="26" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy-4" fill="#D0D9DF" fill-rule="nonzero" mask="url(#mask-2)" x="21" y="26" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy" fill="#E9EDF2" fill-rule="nonzero" mask="url(#mask-2)" x="0" y="14" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy-3" fill="#FFD949" fill-rule="nonzero" mask="url(#mask-2)" x="0" y="2" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy-7" fill="#E1B950" fill-rule="nonzero" mask="url(#mask-2)" x="21" y="2" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy-5" fill="#D0D9DF" fill-rule="nonzero" mask="url(#mask-2)" x="21" y="14" width="21" height="12"></rect>
+        </g>
+    </g>
+</svg>

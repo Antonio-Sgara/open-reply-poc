@@ -1,0 +1,101 @@
+//widget
+.inputWithIncrement {
+  width: 80px;
+  height: 40px;
+  border-radius: 2px;
+  border: solid 1px #92a6bc;
+  background-color: rgba(233, 237, 242, 0.7);
+  position: relative;
+  input {
+    background-color: transparent;
+    border: 0;
+    font-size: 16px;
+    width: 100%;
+    font-weight: 400;
+    font-family: Roboto;
+    color: $color-blu-dark;
+    padding: 9px 24px 6px 11px;
+  }
+  &.highlight {
+    border: 1px solid #ffb900;
+    background-color: rgba(255, 185, 0, 0.07);
+    input {
+      color: #ffb900;
+      font-weight: 500;
+    }
+    .inputWithIncrement__button {
+      button {
+        color: #ffb900;
+      }
+    }
+  }
+}
+.inputWithIncrement__wrapperButtons {
+  position: absolute;
+  right: 0;
+  height: 100%;
+  width: 24px;
+  top: 0;
+}
+.inputWithIncrement__button {
+  height: 50%;
+  color: $color-blu-dark;
+  button {
+    border: 0;
+    background-color: transparent;
+    color: $color-blu-dark;
+    margin: 0;
+    padding: 0;
+    width: 24px;
+    height: 100%;
+    //outline: 0;
+    &:hover {
+      //color: #92a6bc;
+      opacity: 0.5;
+    }
+    &:disabled {
+      color: #92a6bc !important;
+      opacity: 0;
+    }
+    span {
+      font-size: 9px;
+      display: inline-block;
+    }
+  }
+  &.inputWithIncrement__button--plus {
+    margin-top: -1px;
+    span {
+      vertical-align: bottom;
+      padding-bottom: 3px;
+    }
+  }
+  &.inputWithIncrement__button--less {
+    span {
+      vertical-align: top;
+      padding-top: 3px;
+    }
+  }
+}
+.inputWithIncrement--medium {
+  width: 120px;
+  @include break(lgTablet, min-max) {
+    width: 90px;
+  }
+  @include break(smTablet, max) {
+    width: 90px;
+  }
+}
+.inputWithIncrement--full {
+  width: 100%;
+}
+.inputWithIncrement--movementPopover {
+  width: 180px;
+}
+
+.input--required-message-error {
+  font-size: 14px;
+  font-weight: bold;
+  color: red;
+  display: block;
+  margin-top: 5px;
+}

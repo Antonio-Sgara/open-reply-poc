@@ -1,0 +1,153 @@
+@import "../../styles/variables";
+@import "../../styles/mixin";
+
+.TitlePage {
+}
+
+.TitlePage__title {
+  font-family: Roboto;
+  font-size: 28px;
+  font-weight: 300;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.43;
+  letter-spacing: normal;
+  padding: 40px 0 30px 0;
+}
+
+.TitleTab {
+  display: inline-block;
+}
+
+.TitleTab__title {
+  height: 40px;
+  font-family: Roboto;
+  font-size: 28px;
+  font-weight: 300;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.43;
+  letter-spacing: normal;
+  color: #d4d7d9;
+  @include break(m, max) {
+    font-size: 22px;
+    font-weight: 300;
+    color: #c5c7c9;
+  }
+  .active & {
+    color: #373737;
+    @include break(m, max) {
+      font-size: 22px;
+      font-weight: 300;
+      color: #373737;
+    }
+    &:after {
+      content: "";
+      display: block;
+      width: 50px;
+      height: 3px;
+      border-radius: 2px;
+      background-color: #264d7a;
+      margin-top: 8px;
+    }
+  }
+}
+
+.TitleModule {
+  display: inline-block;
+  height: 70px;
+  line-height: 70px;
+  vertical-align: middle;
+}
+
+.TitleModule__title {
+  font-family: Roboto Slab;
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 28px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.14;
+  letter-spacing: normal;
+  color: #264d7a;
+  @include break(smTablet, max) {
+    font-size: 20px;
+  }
+}
+
+.TitleModule__icon {
+  display: inline-block;
+  height: 70px;
+  vertical-align: top;
+  margin-right: 10px;
+  position: relative;
+  svg {
+    width: 36px;
+    height: 36px;
+    margin-top: 14px;
+  }
+}
+
+.TitleModule__wrapper {
+}
+
+.TitleModule__back {
+  width: 10px;
+  height: auto;
+  margin-right: 20px;
+  vertical-align: top;
+  svg {
+    width: 10px;
+    margin-top: 16px;
+  }
+}
+
+.TitleWidget {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.TitleWidget__container {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.TitleWidget__title {
+  height: 24px;
+  font-family: Roboto;
+  font-size: 20px;
+  font-weight: 500;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  color: #264d7a;
+}
+
+.TitleFullPage {
+  display: inline-block;
+  line-height: 80px;
+  vertical-align: middle;
+
+  &.no-lineHeight {
+    line-height: initial;
+  }
+}
+
+.TitleFullPage__title {
+  font-family: Roboto Slab;
+  font-size: 28px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  display: inline-block;
+  letter-spacing: normal;
+  vertical-align: middle;
+  color: #264d7a;
+  &.longTitle {
+    font-size: 25px;
+  }
+}

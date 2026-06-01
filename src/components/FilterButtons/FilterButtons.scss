@@ -1,0 +1,90 @@
+@import "../../styles/variables";
+@import "../../styles/mixin";
+
+.filterButtons {
+  @include flex-box;
+  @include flex-flow(row, wrap);
+  div:not(:last-child) {
+    margin-right: 10px;
+  }
+  &.filterButtons--big {
+    div:not(:last-child) {
+      margin-right: 15px;
+    }
+  }
+}
+
+.filterToggleButton {
+  width: auto;
+  height: 30px;
+  padding: 4px 13px 0;
+  border-radius: 5px;
+  background-color: #e9edf2;
+  color: #92a6bc;
+  font-size: 14px;
+  text-transform: uppercase;
+  @include box-shadow(0, 1px, 2px, 0, rgba(0, 0, 0, 0.1), inset);
+  &.active {
+    background-color: #264d7a;
+    color: $color-white;
+  }
+  &:hover {
+    &:not(.disabled) {
+      cursor: pointer;
+      &:not(.active) {
+        opacity: 0.8;
+      }
+    }
+    &:not(.active) {
+      opacity: 0.8;
+    }
+  }
+  span {
+    vertical-align: middle;
+  }
+}
+
+.filterToggleButton--big {
+  width: auto;
+  height: 48px;
+  border-radius: 5px;
+  font-size: 16px;
+  margin-bottom: 10px;
+  background-color: $color-white;
+  color: #373737;
+  opacity: 1;
+  white-space: nowrap;
+  text-transform: none;
+  @include flex-box;
+  @include flex-justify-center;
+  @include flex-align-items(center);
+  @include box-shadow(0, 2px, 6px, 0, rgba(0, 0, 0, 0.3));
+  &:hover {
+    &:not(.disabled) {
+      cursor: pointer;
+      @include box-shadow(0, 1px, 2px, 0, rgba(0, 0, 0, 0.3), inset);
+    }
+  }
+  &.active {
+    background-color: $color-blu-dark;
+    color: $color-white;
+    @include box-shadow(0, 2px, 6px, 0, rgba(0, 0, 0, 0.3), inset);
+    &:hover {
+      &:not(.disabled) {
+        cursor: auto;
+        @include box-shadow(0, 2px, 6px, 0, rgba(0, 0, 0, 0.3), inset);
+      }
+    }
+  }
+}
+
+.with-top-spacing {
+  margin-top: 1em;
+}
+
+.alignFiltersRight {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 20px;
+}

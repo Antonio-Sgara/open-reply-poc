@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="46px" height="46px" viewBox="0 0 46 46" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <!--<title>illustrazione/functional/documento drag and drop</title>-->
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <rect id="path-1" x="18" y="18" width="28" height="28" rx="2"></rect>
+        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="28" height="28" fill="white">
+            <use xlink:href="#path-1"></use>
+        </mask>
+    </defs>
+    <g id="illustrazione/functional/documento-drag-and-drop" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group" fill-rule="nonzero">
+            <g id="fogli">
+                <rect id="Rectangle-Copy" fill="#92A6BC" x="0" y="2" width="28" height="28" rx="2"></rect>
+                <use id="Rectangle-Copy-2" stroke="#92A6BC" mask="url(#mask-2)" stroke-width="2" stroke-dasharray="3" xlink:href="#path-1"></use>
+                <rect id="Rectangle" fill="#E9EDF2" x="2" y="0" width="28" height="28" rx="1.86666667"></rect>
+            </g>
+        </g>
+        <path d="M34.817167,20.1220556 L31.1028486,16.4080174 L33.7527372,14.8775876 C33.9598039,14.758011 34.0802734,14.5307338 34.0630545,14.2922718 C34.0458356,14.0537469 33.8938819,13.8460744 33.6717957,13.7575387 L21.855418,9.04447353 C21.6237798,8.95197917 21.3592748,9.00645784 21.1828754,9.18277522 C21.0064759,9.35921826 20.9519912,9.62363149 21.0444329,9.85524441 L25.7572591,21.6717131 C25.8458673,21.893775 26.0535625,22.0457749 26.2921134,22.0629919 C26.5306643,22.0803346 26.7580293,21.9598155 26.8775561,21.7527085 L28.4080275,19.1031095 L32.1220945,22.8171477 C32.2391076,22.9342109 32.397974,23 32.5634389,23 C32.7290294,23 32.8877701,22.9342109 33.0047832,22.8171477 L34.8172298,21.0046478 C35.0609339,20.7609076 35.0609339,20.3657958 34.817167,20.1220556 Z" id="Path" fill="#3D9AE2"></path>
+    </g>
+</svg>

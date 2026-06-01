@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="46px" height="46px" viewBox="0 0 46 46" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <!--<title>illustrazione/cluster clientela/affluent</title>-->
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M22.5837704,2.86587024 L40.5163139,35.3152347 C40.9996964,36.1899269 40.6824773,37.290864 39.807785,37.7742466 C39.5398325,37.9223256 39.2386904,38 38.9325435,38 L3.06745651,38 C2.0680841,38 1.2579327,37.1898486 1.2579327,36.1904762 C1.2579327,35.8843292 1.33560708,35.5831872 1.48368611,35.3152347 L19.4162296,2.86587024 C19.8996122,1.99117801 21.0005493,1.67395883 21.8752415,2.15734138 C22.1734035,2.32211509 22.4189967,2.56770829 22.5837704,2.86587024 Z" id="path-1"></path>
+    </defs>
+    <g id="illustrazione/cluster-clientela/affluent" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group" transform="translate(2.000000, 4.000000)">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <use id="Triangle" fill="#D8D8D8" xlink:href="#path-1"></use>
+            <rect id="Rectangle" fill="#E9EDF2" fill-rule="nonzero" mask="url(#mask-2)" x="0" y="26" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy-4" fill="#D0D9DF" fill-rule="nonzero" mask="url(#mask-2)" x="21" y="26" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy" fill="#3D9AE2" mask="url(#mask-2)" x="0" y="14" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy-3" fill="#E9EDF2" fill-rule="nonzero" mask="url(#mask-2)" x="0" y="2" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy-7" fill="#D0D9DF" fill-rule="nonzero" mask="url(#mask-2)" x="21" y="2" width="21" height="12"></rect>
+            <rect id="Rectangle-Copy-5" fill="#1B7BC7" mask="url(#mask-2)" x="21" y="14" width="21" height="12"></rect>
+        </g>
+    </g>
+</svg>

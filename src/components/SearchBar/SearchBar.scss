@@ -1,0 +1,83 @@
+@import "../../styles/variables";
+@import "../../styles/mixin";
+
+.SearchBar__wrapper {
+  &.advanced {
+    width: 100%;
+  }
+}
+
+.SearchBar__section {
+  @include flex-box;
+  @include flex-flow(row, nowrap);
+}
+
+.SearchBar {
+  width: 407px;
+  height: 48px;
+  border-radius: 100px;
+  border: none;
+  background-color: #fff;
+  @include flex-box;
+  @include flex-align-items(center);
+  @include box-shadow(1px, 2px, 6px, 0, rgba(0, 0, 0, 0.15));
+
+  @include break(m, max) {
+    min-width: 407px;
+  }
+}
+
+.SearchBar--large {
+  width: 70%;
+}
+
+.SearchBar__form {
+  width: 100%;
+  padding: 0 25px;
+  @include flex-box;
+  @include flex-flow(row, nowrap);
+}
+
+.SearchBar__input {
+  @include flex-grow(1);
+  border: none;
+  background: none;
+}
+
+.SearchBar__input:focus {
+  outline: none;
+}
+
+.SearchBar__icon {
+  width: 20px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.productsActionModal__search {
+  margin-bottom: 20px;
+}
+
+.SearchBar__advancedToggle {
+  @include flex-box;
+  @include flex-align-items(center);
+  margin-left: 30px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  color: #92a6bc;
+  width: fit-content;
+
+  .icon-investi {
+    font-size: 12px;
+  }
+
+  .icon-disinvesti {
+    font-size: 12px;
+  }
+}
+
+.SearchBar__advancedSearch {
+  margin-top: 30px;
+  margin-bottom: 70px;
+}

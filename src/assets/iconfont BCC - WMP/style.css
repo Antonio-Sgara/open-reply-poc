@@ -1,0 +1,230 @@
+@font-face {
+  font-family: "icomoon";
+  src: url("fonts/icomoon.eot?rra6ju");
+  src: url("fonts/icomoon.eot?rra6ju#iefix") format("embedded-opentype"),
+    url("fonts/icomoon.woff2?rra6ju") format("woff2"),
+    url("fonts/icomoon.ttf?rra6ju") format("truetype"),
+    url("fonts/icomoon.woff?rra6ju") format("woff"),
+    url("fonts/icomoon.svg?rra6ju#icomoon") format("svg");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="icon-"],
+[class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: "icomoon" !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-accordion-form-open:before {
+  content: "\e900";
+}
+.icon-accordion-form:before {
+  content: "\e901";
+}
+.icon-adeguatezza:before {
+  content: "\e902";
+}
+.icon-alert-danger:before {
+  content: "\e903";
+}
+.icon-attachment:before {
+  content: "\e904";
+}
+.icon-calendar-ADD:before {
+  content: "\e905";
+}
+.icon-calendar:before {
+  content: "\e906";
+}
+.icon-change:before {
+  content: "\e907";
+}
+.icon-chart-2:before {
+  content: "\e908";
+}
+.icon-chart:before {
+  content: "\e909";
+}
+.icon-client:before {
+  content: "\e90a";
+}
+.icon-cliente-ADD:before {
+  content: "\e90b";
+}
+.icon-cliente:before {
+  content: "\e90c";
+}
+.icon-clock:before {
+  content: "\e90d";
+}
+.icon-close-small:before {
+  content: "\e90e";
+}
+.icon-close-tables:before {
+  content: "\e90f";
+}
+.icon-close:before {
+  content: "\e910";
+}
+.icon-confronto:before {
+  content: "\e911";
+}
+.icon-delete:before {
+  content: "\e912";
+}
+.icon-diagnosi:before {
+  content: "\e913";
+}
+.icon-investi:before {
+  content: "\e914";
+}
+.icon-document-mancante:before {
+  content: "\e915";
+}
+.icon-document:before {
+  content: "\e916";
+}
+.icon-download:before {
+  content: "\e917";
+}
+.icon-edit:before {
+  content: "\e918";
+}
+.icon-email:before {
+  content: "\e919";
+}
+.icon-expert:before {
+  content: "\e91a";
+}
+.icon-disinvesti:before {
+  content: "\e91b";
+}
+.icon-left-arrow:before {
+  content: "\e91c";
+}
+.icon-lock-close:before {
+  content: "\e91d";
+}
+.icon-lock-open:before {
+  content: "\e91e";
+}
+.icon-notifications:before {
+  content: "\e91f";
+}
+.icon-open-tables:before {
+  content: "\e920";
+}
+.icon-plus:before {
+  content: "\e921";
+}
+.icon-print:before {
+  content: "\e922";
+}
+.icon-proponi:before {
+  content: "\e923";
+}
+.icon-resume:before {
+  content: "\e924";
+}
+.icon-right-arrow:before {
+  content: "\e925";
+}
+.icon-save:before {
+  content: "\e926";
+}
+.icon-search:before {
+  content: "\e927";
+}
+.icon-send:before {
+  content: "\e928";
+}
+.icon-settings:before {
+  content: "\e929";
+}
+.icon-show:before {
+  content: "\e92a";
+}
+.icon-simulatore:before {
+  content: "\e92b";
+}
+.icon-star-select:before {
+  content: "\e92c";
+}
+.icon-star:before {
+  content: "\e92d";
+}
+.icon-telephone:before {
+  content: "\e92e";
+}
+.icon-view:before {
+  content: "\e92f";
+}
+.icon-Immobiliare:before {
+  content: "\e930";
+}
+.icon-Investimento:before {
+  content: "\e931";
+}
+.icon-Obiettivi:before {
+  content: "\e932";
+}
+.icon-PassGenerazionale:before {
+  content: "\e933";
+}
+.icon-Previdenza:before {
+  content: "\e934";
+}
+.icon-Protezione:before {
+  content: "\e935";
+}
+.icon-check:before {
+  content: "\e936" !important;
+}
+.icon-check-gray:before {
+  content: "\e936" !important;
+}
+.icon-deny-off:before {
+  content: "\e937";
+}
+.icon-deny:before {
+  content: "\e938";
+}
+.icon-help:before {
+  content: "\e939";
+}
+.icon-info:before {
+  content: "\e93a";
+}
+.icon-high:before {
+  content: "\e93b";
+}
+.icon-low:before {
+  content: "\e93c";
+}
+.icon-mute:before {
+  content: "\e93d";
+}
+.icon-collapse:before {
+  content: "\e93e";
+}
+.icon-expand:before {
+  content: "\e93f";
+}
+.icon-play:before {
+  content: "\e940";
+}
+.icon-pause:before {
+  content: "\e941";
+}

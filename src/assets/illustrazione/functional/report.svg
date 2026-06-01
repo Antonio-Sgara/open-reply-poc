@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="46px" height="46px" viewBox="0 0 46 46" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <!--<title>illustrazione/functional/report</title>-->
+    <desc>Created with Sketch.</desc>
+    <g id="illustrazione/functional/report" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-4" transform="translate(7.000000, 2.000000)">
+            <g id="fogli" fill-rule="nonzero">
+                <rect id="Rectangle-Copy-2" fill="#92A6BC" x="0" y="4" width="28" height="38" rx="2"></rect>
+                <rect id="Rectangle-Copy" fill="#D0D9DF" x="2" y="2" width="28" height="38" rx="2"></rect>
+                <rect id="Rectangle" fill="#E9EDF2" x="4" y="0" width="28" height="38" rx="1.86666667"></rect>
+            </g>
+            <g id="Group-3" transform="translate(7.848366, 4.000000)">
+                <path d="M11.1516337,7 L11.1516337,0.28832688 C11.1516337,0.129747096 11.0399804,0 10.9035152,0 L9.39975211,0 C9.26328697,0 9.15163367,0.129747096 9.15163367,0.28832688 L9.15163367,7 L11.1516337,7 Z" id="Path" fill="#3D9AE2"></path>
+                <path d="M8.15163367,7 L8.15163367,4.28832688 C8.15163367,4.1297471 8.03998038,4 7.90351524,4 L6.39975211,4 C6.26328697,4 6.15163367,4.1297471 6.15163367,4.28832688 L6.15163367,7 L8.15163367,7 Z" id="Path-Copy-3" fill="#FFB900" fill-rule="nonzero"></path>
+                <path d="M5.15163367,7 L5.15163367,2.28832688 C5.15163367,2.1297471 5.03998038,2 4.90351524,2 L3.39975211,2 C3.26328697,2 3.15163367,2.1297471 3.15163367,2.28832688 L3.15163367,7 L5.15163367,7 Z" id="Path-Copy-4" fill="#76D37E" fill-rule="nonzero"></path>
+                <path d="M2.15163367,7 L2.15163367,0.28832688 C2.15163367,0.129747096 2.03998038,0 1.90351524,0 L0.399752109,0 C0.263286969,0 0.151633673,0.129747096 0.151633673,0.28832688 L0.151633673,7 L2.15163367,7 Z" id="Path-Copy-5" fill="#EE5019" fill-rule="nonzero"></path>
+            </g>
+            <g id="Group-2" transform="translate(7.000000, 14.000000)">
+                <path d="M0.0569642857,5.51952507 L2.22027551,5.51952507 C2.22027551,4.30363799 3.18874235,3.31790365 4.38351276,3.31790365 L4.38351276,1.11650808 C1.99419388,1.11650808 0.0569642857,3.0877509 0.0569642857,5.51952507 Z" id="Path" fill="#EE5019" fill-rule="nonzero"></path>
+                <path d="M5.48070408,5.06261699e-14 L5.48070408,2.20147085 C6.67547449,2.20147085 7.64394133,3.18705462 7.64394133,4.40294171 L9.80732653,4.40294171 C9.80732653,1.97116753 7.87017092,5.06261699e-14 5.48070408,5.06261699e-14 Z" id="Path" fill="#3D9AE2"></path>
+                <g id="Group" transform="translate(0.000000, 5.130318)" fill="#FFB900" fill-rule="nonzero">
+                    <path d="M6.54675,0.389206898 C6.54675,1.60494341 5.57835714,2.59067775 4.38358673,2.59067775 C3.18881633,2.59067775 2.22034949,1.60494341 2.22034949,0.389206898 L0.0569642857,0.389206898 C0.0569642857,2.8208305 1.99419388,4.79222389 4.38351276,4.79222389 C6.77297959,4.79222389 8.7101352,2.8208305 8.7101352,0.389206898 L6.54675,0.389206898 Z" id="Path"></path>
+                </g>
+            </g>
+            <rect id="Rectangle" fill="#D0D9DF" fill-rule="nonzero" x="22" y="4" width="6" height="1" rx="0.5"></rect>
+            <rect id="Rectangle-Copy-3" fill="#D0D9DF" fill-rule="nonzero" x="22" y="7" width="6" height="1" rx="0.5"></rect>
+            <rect id="Rectangle-Copy-4" fill="#D0D9DF" fill-rule="nonzero" x="22" y="10" width="6" height="1" rx="0.5"></rect>
+            <rect id="Rectangle" fill="#D0D9DF" fill-rule="nonzero" x="19" y="15" width="10" height="1.5" rx="0.75"></rect>
+            <rect id="Rectangle-Copy-8" fill="#D0D9DF" fill-rule="nonzero" x="7" y="27" width="10" height="1.5" rx="0.75"></rect>
+            <rect id="Rectangle-Copy-5" fill="#D0D9DF" fill-rule="nonzero" x="19" y="18" width="10" height="1.5" rx="0.75"></rect>
+            <rect id="Rectangle-Copy-9" fill="#D0D9DF" fill-rule="nonzero" x="7" y="30" width="10" height="1.5" rx="0.75"></rect>
+            <rect id="Rectangle-Copy-6" fill="#D0D9DF" fill-rule="nonzero" x="19" y="21" width="10" height="1.5" rx="0.75"></rect>
+            <rect id="Rectangle-Copy-10" fill="#D0D9DF" fill-rule="nonzero" x="7" y="33" width="10" height="1.5" rx="0.75"></rect>
+            <rect id="Rectangle" fill="#EE5019" fill-rule="nonzero" x="22" y="27" width="6" height="6" rx="1"></rect>
+            <rect id="Rectangle-Copy-7" fill="#76D37E" fill-rule="nonzero" x="25" y="31" width="4" height="4" rx="1"></rect>
+        </g>
+    </g>
+</svg>

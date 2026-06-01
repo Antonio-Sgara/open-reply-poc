@@ -1,0 +1,74 @@
+//widget
+
+.widgetWrapper {
+}
+.widgetLoaderWrapper {
+  min-height: 100px;
+
+  & .LoaderWidgetAbsoluteMiddle {
+    background-color: transparent;
+  }
+}
+.widgetWrapper__content {
+  position: relative;
+}
+
+.widgetBlock {
+  margin-top: 20px;
+}
+
+.widgetPanel {
+  background: $color-white;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.15);
+  padding: 28px;
+  //min-height: 300px;
+  margin-top: 20px;
+  &--small {
+    padding: 20px 28px;
+  }
+  &--total {
+    margin-top: 0;
+    display: inline-block;
+    padding: 20px 28px;
+  }
+}
+
+.widgetBlockChart {
+}
+
+//label widget generic
+.widgetItem__label {
+  font-size: 12px;
+  color: $color-blu-lighter;
+  text-transform: uppercase;
+  @include break(m, max) {
+    font-size: 10px;
+    color: #647c96;
+    font-weight: 400;
+  }
+  & .widgetItem__limits {
+    font-weight: bold;
+    padding-top: 5px;
+    height: 23px;
+    svg {
+      width: 10px;
+      height: 10px;
+      g path {
+        fill: #647c96 !important;
+      }
+    }
+  }
+}
+.widgetItem__value {
+  font-size: 20px;
+  color: $color-blu-dark;
+}
+
+/* action bar */
+.actionBar {
+  text-align: right;
+  .button__container + .button__container {
+    margin-left: 20px;
+  }
+}

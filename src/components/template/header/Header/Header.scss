@@ -1,0 +1,242 @@
+@import "../../../../styles/variables";
+@import "../../../../styles/mixin";
+
+.Header-container {
+  width: 100%;
+  max-width: 1440px;
+  z-index: 1000;
+
+  &.Header--relative {
+    position: relative;
+  }
+
+  &.Header--fixed {
+    position: fixed;
+    top: 0;
+  }
+}
+
+.Header__spacer {
+  &.Header--fixed {
+    height: 80px;
+  }
+}
+
+.Header__wrapper {
+  height: 80px;
+  width: 100%;
+  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.1);
+  background-color: $color-white;
+  z-index: 5;
+  position: relative;
+
+  .Header {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    height: 100%;
+    width: 100%;
+
+    .Header--row {
+      width: 100%;
+      position: absolute;
+      top: 0px;
+    }
+  }
+}
+
+.HeaderAdvice__spacer {
+  &.Header--fixed {
+    height: 130px;
+  }
+}
+
+.HeaderAdvice__spacer--small {
+  &.Header--relative {
+    height: 19px;
+  }
+
+  &.Header--fixed {
+    height: 100px;
+  }
+}
+
+.HeaderAdvice__actions {
+  .button__container + .button__container {
+    margin-left: 20px;
+  }
+}
+
+.Header__stepperLineWrapper {
+  height: auto;
+  background-color: #fcfbfb;
+  position: relative;
+  z-index: 1;
+}
+
+.HeaderAdvice__wrapper {
+  z-index: 5;
+  background-color: $color-white;
+  height: 80px;
+  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.1);
+  background-color: $color-white;
+}
+
+.Header__wrapperContainer {
+  @media screen and (max-width: 1023px) {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 25px;
+  }
+}
+
+.Header__navbarBlock {
+  flex-wrap: nowrap;
+}
+
+.Header__WmpNavbar {
+  height: 100%;
+  width: 100%;
+  padding: 10px 0;
+  @include flex-justify-start;
+
+  .navbar-brand {
+    height: 100%;
+    width: 24%;
+    min-width: 24%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    @media screen and (min-width: 1024px) and (max-width: 1300px) {
+      max-width: 18%;
+      min-width: 18%;
+    }
+
+    @media screen and (min-width: 1300px) {
+      max-width: 16%;
+      min-width: 16%;
+    }
+  }
+
+  @media screen and (max-width: 1023px) {
+    width: 100%;
+  }
+}
+
+.Header__WmpNavbar .row.clickable {
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.Header__WmpNavbar .row.clickable > * {
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.alternative-header-link-padding {
+  padding: 0rem 0.3rem;
+}
+
+.classic-header-link-padding {
+  padding: 0rem 0.6rem;
+}
+
+.Header__link {
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 14px;
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  text-decoration: none;
+
+  @media screen and (max-width: 1023px) {
+    margin-bottom: 10px;
+    padding: 35px 1rem 10px;
+    display: block;
+  }
+}
+
+.Header__link:hover,
+.Header__link:active,
+.Header__link:focus,
+.Header__link:visited {
+  color: rgba(0, 0, 0, 0.8);
+  text-decoration: none;
+}
+
+@media screen and (max-width: 1089px) and (min-width: 1024px) {
+  .Header__link {
+    font-size: 14px;
+  }
+}
+
+.Header__linkSelected {
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.8);
+
+  @media screen and (max-width: 1023px) {
+    border-bottom: 1px solid $color-grey-80;
+  }
+}
+
+.Header__logo {
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.Header__logoText {
+  width: 78px;
+  height: 39px;
+  font-family: "Roboto Slab";
+  font-size: 12px;
+  font-weight: 300;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.08;
+  letter-spacing: normal;
+  color: #4d4d4f;
+  margin-top: 4px;
+}
+
+.Header__Line {
+  width: 0;
+  height: 40px;
+  margin: 0px 10px 0px 10px;
+  display: inline-block;
+  border-left: 1px solid #979797;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.HeaderNavbar_closeBtn {
+  margin: 0 40px 30px 0;
+}
+
+.header__mainNavToggle {
+  margin-right: 20px;
+
+  img,
+  svg {
+    height: 24px;
+    width: 24px;
+  }
+}
+
+.Header__wrapperContainer {
+  padding: 0 30px;
+}
+
+.alternative-header-wrapperContainer {
+  height: 100%;
+  padding-left: 12px;
+  text-align: center;
+}

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="30px" height="30px" viewBox="0 0 30 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 62 (91390) - https://sketch.com -->
+    <!--<title>icon/player icons/play</title>-->
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M15.8944272,1.78885438 L29.2763932,28.5527864 C29.5233825,29.0467649 29.3231581,29.6474379 28.8291796,29.8944272 C28.6903242,29.9638549 28.5372111,30 28.381966,30 L1.61803399,30 C1.06574924,30 0.618033989,29.5522847 0.618033989,29 C0.618033989,28.8447549 0.654179081,28.6916418 0.723606798,28.5527864 L14.1055728,1.78885438 C14.3525621,1.29487588 14.9532351,1.09465154 15.4472136,1.34164079 C15.640741,1.43840449 15.7976635,1.59532698 15.8944272,1.78885438 Z" id="path-1"></path>
+        <filter x="-21.3%" y="-12.5%" width="142.5%" height="142.5%" filterUnits="objectBoundingBox" id="filter-2">
+            <feOffset dx="0" dy="2" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.3 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="icon/player-icons/play" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Play" transform="translate(15.000000, 15.000000) rotate(90.000000) translate(-15.000000, -15.000000) ">
+            <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+            <use fill="#FFFFFF" fill-rule="evenodd" xlink:href="#path-1"></use>
+        </g>
+    </g>
+</svg>
