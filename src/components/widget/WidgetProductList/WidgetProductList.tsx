@@ -32,6 +32,8 @@ import ListProductsFundsAnalysis from "components/ListProductsFundsAnalysis/List
 import IconWithPopover from "components/IconWithPopover/IconWithPopover";
 import { ReactiveDateRangePicker } from "components/ReactiveDateRangePicker/ReactiveDateRangePicker";
 import InfoAlert from "components/InfoAlert";
+import { useSemanticProductSearch } from "../../../semantic-search/useSemanticProductSearch";
+import { semanticDebugLog } from "../../../semantic-search/debug";
 import "./WidgetProductList.scss";
 
 interface IProps {
@@ -82,6 +84,16 @@ const WidgetProductsList: FC<IProps> = ({
   );
   const [errorAdvancedSearch, setErrorAdvancedSearch] = useState(false);
   const [pastMonthLastDay, setPastMonthLastDay] = useState("");
+  const {
+    semanticQuery,
+    setSemanticQuery,
+    semanticProducts,
+    semanticResults,
+    isIndexingSemanticProducts,
+    isSemanticSearchActive,
+    searchSemantically,
+    clearSemanticSearch
+  } = useSemanticProductSearch<any>(products);
 
   const firstSearchProducts = (resetInputSearch = false) => {
     if (savedFilters && savedFilters?.filters) {
@@ -675,6 +687,63 @@ const WidgetProductsList: FC<IProps> = ({
           ? memoizedSearchBarFundsAnalysis
           : memoizedSearchBar}
       </div>
+      {!isShowingSecondary && (
+        <form
+          className="widgetProductsList__semanticSearch"
+          onSubmit={event => {
+            event.preventDefault();
+            semanticDebugLog("Submit form ricerca semantica", {
+              semanticQuery,
+              loadedProducts: products?.length ?? 0
+            });
+            searchSemantically();
+          }}
+        >
+          <label
+            className="widgetProductsList__semanticSearchLabel"
+            htmlFor="semantic-product-search"
+          >
+            Ricerca semantica
+          </label>
+          <div className="widgetProductsList__semanticSearchControls">
+            <input
+              id="semantic-product-search"
+              className="widgetProductsList__semanticSearchInput"
+              value={semanticQuery}
+              onChange={event => setSemanticQuery(event.target.value)}
+              placeholder="Es. fondi sostenibili con rischio basso in euro"
+              disabled={isIndexingSemanticProducts || !products?.length}
+            />
+            <button
+              className="widgetProductsList__semanticSearchButton"
+              type="submit"
+              disabled={
+                isIndexingSemanticProducts ||
+                !products?.length ||
+                !semanticQuery.trim()
+              }
+            >
+              Cerca
+            </button>
+            {isSemanticSearchActive && (
+              <button
+                className="widgetProductsList__semanticSearchButton widgetProductsList__semanticSearchButton--secondary"
+                type="button"
+                onClick={clearSemanticSearch}
+              >
+                Reset
+              </button>
+            )}
+          </div>
+          <div className="widgetProductsList__semanticSearchStatus">
+            {isIndexingSemanticProducts
+              ? "Preparazione indice semantico..."
+              : isSemanticSearchActive
+                ? `${semanticResults.length} risultati semantici sul set caricato`
+                : "La ricerca interpreta una frase libera sui prodotti caricati."}
+          </div>
+        </form>
+      )}
       <div className="widgetProductsList__scrollerAnchor">
         <div ref={productListHeaderRef}></div>
       </div>
@@ -683,9 +752,14 @@ const WidgetProductsList: FC<IProps> = ({
           <Col>
             <Title.Widget>
               <FormattedMessage id="products.productList.products" />
-              {!isShowingSecondary && products && (
+              {!isShowingSecondary && products && !isSemanticSearchActive && (
                 <span className="simpleTableTitle__numberOfElements">
                   ({totalElements} totali){" "}
+                </span>
+              )}
+              {!isShowingSecondary && isSemanticSearchActive && (
+                <span className="simpleTableTitle__numberOfElements">
+                  ({semanticResults.length} risultati semantici){" "}
                 </span>
               )}
               {isShowingSecondary && fundsAnalysisProducts?.length > 0 && (
@@ -758,21 +832,25 @@ const WidgetProductsList: FC<IProps> = ({
         />
       ) : products ? (
         <ListProducts
-          products={products}
+          products={isSemanticSearchActive ? semanticProducts : products}
           className={"withColFixed"}
           onSort={sortProducts}
           activeSort={activeSort}
           sortStep={currentSortStep}
-          lastPage={lastPage}
-          fetchMore={fetchMore}
+          lastPage={isSemanticSearchActive ? true : lastPage}
+          fetchMore={isSemanticSearchActive ? () => null : fetchMore}
           filterPreferred={(preferred: boolean) => filterPreferred(preferred)}
           saveFilters={saveFilters}
-          loadingMore={loadingMore}
+          loadingMore={isSemanticSearchActive ? false : loadingMore}
           showFavorites={showFavorites}
-          numberOfElements={numberOfElements}
-          totalElements={totalElements}
-          totalPages={totalPages}
-          currentPage={currentPage}
+          numberOfElements={
+            isSemanticSearchActive ? semanticProducts.length : numberOfElements
+          }
+          totalElements={
+            isSemanticSearchActive ? semanticProducts.length : totalElements
+          }
+          totalPages={isSemanticSearchActive ? 1 : totalPages}
+          currentPage={isSemanticSearchActive ? 0 : currentPage}
           headers={CatalogueProductListHeaders}
           scalar
         />
