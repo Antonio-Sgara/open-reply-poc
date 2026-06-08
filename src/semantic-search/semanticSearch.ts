@@ -1,7 +1,9 @@
 import { buildProductSemanticText } from "./buildProductSemanticText";
+import { calculateBusinessRanking } from "./businessRanking";
 import { semanticDebugGroup, semanticDebugLog } from "./debug";
 import { embedText } from "./embeddingService";
 import { cosineSimilarity } from "./similarity";
+import { resolveSimilarProductsIntent } from "./similarProducts";
 import {
   SemanticProductIndexItem,
   SemanticProductSearchResult,
@@ -56,16 +58,81 @@ export const searchProductsByMeaning = async <
   if (!normalizedQuery) return [];
 
   semanticDebugLog("Query utente ricevuta", normalizedQuery);
+
+  const similarProductsIntent = resolveSimilarProductsIntent(
+    normalizedQuery,
+    index
+  );
+
+  if (similarProductsIntent) {
+    const similarResults = findSimilarProducts(
+      similarProductsIntent.sourceProduct.productId,
+      index,
+      limit
+    );
+
+    semanticDebugGroup("Risultati prodotti simili", () => {
+      console.log("Query:", normalizedQuery);
+      console.log("Ricerca sorgente:", similarProductsIntent.sourceQuery);
+      console.log("Prodotto sorgente:", {
+        productId: similarProductsIntent.sourceProduct.productId,
+        name:
+          similarProductsIntent.sourceProduct.product.name ??
+          similarProductsIntent.sourceProduct.product.productName,
+        isin: similarProductsIntent.sourceProduct.product.isin,
+        riskKiid: similarProductsIntent.sourceProduct.product.riskKiid,
+        currency: similarProductsIntent.sourceProduct.product.currency
+      });
+      console.table(
+        similarResults.map((result, position) => ({
+          position: position + 1,
+          similarityScore: Number(result.score.toFixed(4)),
+          matchedRules: result.matchedRules?.join(", "),
+          productId: result.product.productId,
+          name: result.product.name ?? result.product.productName,
+          riskKiid: result.product.riskKiid,
+          currency: result.product.currency,
+          sustainable: result.product.sustainable,
+          ecoSustainable: result.product.ecoSustainable,
+          pai: result.product.pai,
+          coupon: result.product.coupon
+        }))
+      );
+      console.log("Risultati completi prodotti simili:", similarResults);
+    });
+
+    return similarResults;
+  }
+
   const queryEmbedding = await embedText(normalizedQuery);
 
   const scoredResults = index
-    .map(indexItem => ({
-      product: indexItem.product,
-      score: cosineSimilarity(queryEmbedding, indexItem.embedding),
-      semanticText: indexItem.semanticText
-    }))
-    .filter(result => result.score > 0)
-    .sort((first, second) => second.score - first.score);
+    .map(indexItem => {
+      const semanticScore = cosineSimilarity(queryEmbedding, indexItem.embedding);
+      const { businessBoost, matchedRules } = calculateBusinessRanking(
+        normalizedQuery,
+        indexItem.product
+      );
+      const finalScore = semanticScore + businessBoost;
+
+      return {
+        product: indexItem.product,
+        score: finalScore,
+        semanticScore,
+        businessBoost,
+        finalScore,
+        matchedRules,
+        semanticText: indexItem.semanticText
+      };
+    })
+    .filter(result => result.finalScore > 0)
+    .sort((first, second) => {
+      if (second.finalScore !== first.finalScore) {
+        return second.finalScore - first.finalScore;
+      }
+
+      return second.semanticScore - first.semanticScore;
+    });
 
   const limitedResults = scoredResults.slice(0, limit);
 
@@ -76,7 +143,10 @@ export const searchProductsByMeaning = async <
     console.table(
       limitedResults.map((result, position) => ({
         position: position + 1,
-        score: Number(result.score.toFixed(4)),
+        semanticScore: Number(result.semanticScore.toFixed(4)),
+        businessBoost: Number(result.businessBoost.toFixed(4)),
+        finalScore: Number(result.finalScore.toFixed(4)),
+        matchedRules: result.matchedRules.join(", "),
         productId: result.product.productId,
         name: result.product.name ?? result.product.productName,
         riskKiid: result.product.riskKiid,
@@ -103,11 +173,22 @@ export const findSimilarProducts = <TProduct extends SemanticProductSource>(
 
   return index
     .filter(item => item.productId !== sourceProduct.productId)
-    .map(indexItem => ({
-      product: indexItem.product,
-      score: cosineSimilarity(sourceProduct.embedding, indexItem.embedding),
-      semanticText: indexItem.semanticText
-    }))
+    .map(indexItem => {
+      const similarityScore = cosineSimilarity(
+        sourceProduct.embedding,
+        indexItem.embedding
+      );
+
+      return {
+        product: indexItem.product,
+        score: similarityScore,
+        semanticScore: similarityScore,
+        businessBoost: 0,
+        finalScore: similarityScore,
+        matchedRules: [`similar to ${sourceProduct.productId}`],
+        semanticText: indexItem.semanticText
+      };
+    })
     .filter(result => result.score > 0)
     .sort((first, second) => second.score - first.score)
     .slice(0, limit);

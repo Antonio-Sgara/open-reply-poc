@@ -34,5 +34,9 @@ export interface SemanticProductIndexItem<TProduct = SemanticProductSource> {
 export interface SemanticProductSearchResult<TProduct = SemanticProductSource> {
   product: TProduct;
   score: number;
+  semanticScore?: number;
+  businessBoost?: number;
+  finalScore?: number;
+  matchedRules?: string[];
   semanticText: string;
 }

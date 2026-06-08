@@ -884,25 +884,550 @@ Duplicato rimosso:
 
 Il file finale non ha duplicati per `productId` o `isin`.
 
-### Stato attuale importante
+#### 9. Collegato il dataset locale alla ricerca semantica
 
-La POC oggi funziona come flusso end-to-end, ma la ricerca semantica nella UI indicizza ancora i prodotti presenti nello stato `products` del componente catalogo.
-
-In pratica:
-
-```text
-prodotti caricati dalla tabella/API -> indice semantico -> ricerca
-```
-
-Il nuovo file:
+Il file:
 
 ```text
 src/products.json
 ```
 
-non e' ancora collegato alla pipeline UI.
+e' stato importato in:
 
-Quindi, finche' non viene collegato, la ricerca continua a lavorare sul batch caricato dalla tabella, non sui 509 prodotti del JSON.
+```text
+src/components/widget/WidgetProductList/WidgetProductList.tsx
+```
+
+La ricerca semantica ora usa i `509` prodotti locali tramite:
+
+```ts
+useSemanticProductSearch(semanticDatasetProducts)
+```
+
+La tabella classica resta invece collegata al normale flusso API/stato `products`.
+
+Comportamento attuale:
+
+- senza query semantica: UI catalogo standard con prodotti caricati dalla tabella/API
+- con query semantica attiva: risultati calcolati sui 509 prodotti di `src/products.json`
+
+I log di submit ora distinguono:
+
+- `loadedTableProducts`
+- `semanticDatasetProducts`
+
+#### 10. Aggiunto reranking business
+
+E' stato aggiunto il file:
+
+```text
+src/semantic-search/businessRanking.ts
+```
+
+La ricerca ora calcola:
+
+```ts
+finalScore = semanticScore + businessBoost
+```
+
+Nel risultato vengono mantenuti:
+
+- `score`: score finale usato per ordinare
+- `semanticScore`: similarity vettoriale/mock
+- `businessBoost`: boost derivato da regole business
+- `finalScore`: somma di `semanticScore` e `businessBoost`
+- `matchedRules`: elenco delle regole applicate
+
+Regole implementate:
+
+- `rischio basso`, `kiid basso`, `kid basso`, `srri basso`, `prudente`, `difensivo`, `conservativo`: favoriscono `riskKiid` piu' basso
+- `rischio alto`, `kiid alto`, `kid alto`, `srri alto`, `dinamico`, `aggressivo`: favoriscono `riskKiid` piu' alto
+- `kiid 3`, `kid 3`, `srri 3`, `rischio 3`: favoriscono il valore esatto o valori vicini
+- `sostenibile`, `sostenibili`, `esg`: favoriscono `sustainable === true`
+- `eco`, `ecosostenibile`, `eco sostenibile`: favoriscono `ecoSustainable === true`
+- `pai`: favorisce `pai === true`
+- `cedola`, `cedolare`, `distribuzione`: favoriscono `coupon === true`
+- `euro`, `eur`: favoriscono `currency === "EUR"`
+- `collocato`, `collocati`, `collocamento`: favoriscono `isPlaced === true`
+
+I log della ricerca ora mostrano:
+
+- `semanticScore`
+- `businessBoost`
+- `finalScore`
+- `matchedRules`
+
+Verifica fatta:
+
+```text
+fondi con rischio kiid basso
+```
+
+I primi risultati in UI risultano ordinati con `riskKiid` basso, partendo da KIID `1` e `2`.
+
+#### 11. Esempio salvato di trasformazione prodotto
+
+Questo esempio serve per spiegare e debuggare la pipeline attuale:
+
+```text
+prodotto JSON -> testo semantico -> token/sinonimi -> vettore mock -> ranking
+```
+
+Prodotto usato:
+
+```json
+{
+  "productId": 8350,
+  "isin": "AT0000712716",
+  "name": "RAIFFEISEN-HEALTHCARE AKTIENFONDS",
+  "riskKiid": 5,
+  "currency": "EUR",
+  "sustainable": true,
+  "ecoSustainable": true,
+  "pai": true,
+  "coupon": false,
+  "isPlaced": true
+}
+```
+
+Testo semantico generato:
+
+```text
+Nome prodotto: RAIFFEISEN-HEALTHCARE AKTIENFONDS. ISIN: AT0000712716. Societa di gestione: RAIFFEISEN KAPITALANLAGE GES.MBH. Sicav: Raiffeisen Capital Management. Tipologia prodotto: Fondi comuni. Categoria tecnica: OTHER. Asset class primo livello: Altro. Asset class secondo livello: Altro. Asset class terzo livello: Altro. Valuta: EUR. Rischio KIID: 5. Profilo rischio: rischio medio. Sostenibile: si. Eco-sostenibile: si. PAI: si. Best in class: no. Cedola: senza cedola. Collocato: si. Preferito: si.
+```
+
+Esempi di token estratti:
+
+```text
+raiffeisen
+healthcare
+aktienfonds
+fondi
+eur
+rischio
+kiid
+medio
+sostenibile
+eco
+pai
+cedola
+collocato
+moderato
+euro
+fondo
+```
+
+Vettore mock attuale a 128 dimensioni:
+
+```json
+[
+  0, 0, 0, 7, 0, 1, 0, 0, 0, 4, 1, 0, 0, 0, 0, 0,
+  2, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 3, 1,
+  0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+  0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1,
+  0, 0, 0, 0, 0, 1, 5, 0, 1, 0, 0, 0, 1, 0, 3, 0,
+  0, 0, 0, 0, 1, 0, 0, 3, 1, 0, 0, 0, 1, 2, 0, 0,
+  4, 0, 1, 2, 1, 0, 0, 0, 4, 1, 0, 1, 0, 0, 0, 0
+]
+```
+
+Nota: questo vettore non e' un embedding reale. E' il vettore mock/deterministico generato oggi da token, sinonimi e hashing. Quando verra' integrato `transformers.js`, il testo semantico restera' utile ma il vettore verra' prodotto dal modello.
+
+#### 12. Validazione iniziale reranking business
+
+Sono state provate in browser le query demo principali, con risultati calcolati sui `509` prodotti locali.
+
+Query:
+
+```text
+fondi con rischio kiid basso
+```
+
+Esito:
+
+- primi risultati con `riskKiid` `1`
+- alcuni risultati successivi con `riskKiid` `2`
+- ranking coerente con l'intento "rischio basso"
+
+Query:
+
+```text
+fondi con rischio alto
+```
+
+Esito:
+
+- primi risultati con `riskKiid` `7`
+- ranking coerente con l'intento "rischio alto"
+
+Query:
+
+```text
+fondi sostenibili in euro
+```
+
+Esito:
+
+- primi risultati in `EUR`
+- primi risultati con `sustainable === true`
+- molti risultati anche con `ecoSustainable === true` e `pai === true`
+
+Query:
+
+```text
+prodotti con cedola
+```
+
+Esito:
+
+- primi risultati con `coupon === true`
+
+Query:
+
+```text
+prodotti eco sostenibili con pai
+```
+
+Esito:
+
+- primi risultati con `ecoSustainable === true`
+- primi risultati con `sustainable === true`
+- primi risultati con `pai === true`
+
+Conclusione:
+
+- il reranking business funziona sui casi positivi principali
+- non sono stati fatti ulteriori cambi di peso in questa validazione
+- la validazione successiva ha aggiunto anche la gestione delle query negative
+
+#### 13. Aggiunta gestione query negative
+
+Il file:
+
+```text
+src/semantic-search/businessRanking.ts
+```
+
+ora riconosce intenti negativi con parole come:
+
+- `senza`
+- `non`
+- `no`
+- `escludi`
+- `esclusi`
+- `escluse`
+
+Campi gestiti:
+
+- `coupon`
+- `sustainable`
+- `ecoSustainable`
+- `pai`
+- `isPlaced`
+
+Logica:
+
+- se la query chiede un campo positivo, il prodotto con campo `true` riceve boost
+- se la query chiede un campo negativo, il prodotto con campo `false` riceve boost
+- se la query chiede un campo negativo e il prodotto ha campo `true`, riceve penalita'
+
+Esempio:
+
+```text
+fondi senza cedola
+```
+
+premia:
+
+```text
+coupon === false
+```
+
+e penalizza:
+
+```text
+coupon === true
+```
+
+Query negative validate in browser:
+
+```text
+fondi senza cedola
+prodotti non sostenibili
+prodotti senza pai
+prodotti non eco sostenibili
+```
+
+Esiti:
+
+- `fondi senza cedola`: primi risultati con `Cedola = No`
+- `prodotti non sostenibili`: primi risultati con `Sostenibile = No`
+- `prodotti senza pai`: primi risultati con `PAI = No`
+- `prodotti non eco sostenibili`: primi risultati con `Eco-sostenibile = No`
+
+#### 14. Validazione query composte
+
+Sono state validate query con piu' vincoli positivi e negativi insieme.
+
+Query:
+
+```text
+fondi sostenibili in euro senza cedola
+```
+
+Esito:
+
+- primi risultati con `Sostenibile = Si`
+- primi risultati con `Divisa = EUR`
+- primi risultati con `Cedola = No`
+
+Query:
+
+```text
+fondi prudenti non sostenibili
+```
+
+Esito:
+
+- primi risultati con `riskKiid` basso, in particolare `1`, `2`, `3`
+- primi risultati con `Sostenibile = No`
+
+Query:
+
+```text
+prodotti con cedola ma rischio basso
+```
+
+Esito:
+
+- primi risultati con `Cedola = Si`
+- primi risultati con `riskKiid` basso, in particolare `2` e `3`
+
+Query:
+
+```text
+prodotti eco sostenibili senza pai
+```
+
+Esito:
+
+- primi risultati con `Eco-sostenibile = Si`
+- primi risultati con `Sostenibile = Si`
+- primi risultati con `PAI = No`
+
+Conclusione:
+
+- i boost positivi e negativi lavorano correttamente insieme sui casi provati
+- non sono stati necessari cambi di peso in questa validazione
+- il prossimo sviluppo funzionale consigliato e' la modalita' "simili a X"
+
+#### 15. Implementata modalita' "simili a X"
+
+E' stato aggiunto il file:
+
+```text
+src/semantic-search/similarProducts.ts
+```
+
+Responsabilita':
+
+- riconoscere query come `fondi simili a investiper`
+- estrarre il nome/identificativo del prodotto sorgente
+- risolvere il prodotto sorgente cercando per:
+  - `isin`
+  - `productId`
+  - `name`
+  - `productName`
+  - campi testuali correlati
+- usare l'embedding del prodotto sorgente
+- cercare i prodotti piu' vicini nell'indice
+- escludere il prodotto sorgente dai risultati
+
+La funzione:
+
+```ts
+searchProductsByMeaning(query, index)
+```
+
+ora intercetta prima l'intento "simili a X".
+
+Se l'intento viene riconosciuto:
+
+```text
+query -> prodotto sorgente -> embedding sorgente -> prodotti simili
+```
+
+Se non viene riconosciuto:
+
+```text
+query -> embedding query -> ricerca semantica standard + business ranking
+```
+
+Pattern supportati:
+
+```text
+simili a X
+simile a X
+fondi simili a X
+prodotti simili a X
+trovami fondi simili a X
+cerca prodotti simili a X
+```
+
+Query validata in browser:
+
+```text
+fondi simili a investiper
+```
+
+Nel dataset locale esistono due prodotti Investiper:
+
+```json
+[
+  {
+    "productId": 42379,
+    "isin": "IT0001079398",
+    "name": "INVESTIPER OBBLIGAZIONARIO GLOBALE GIA' OBBLIG.M.TERMINE POR",
+    "riskKiid": 3,
+    "currency": "EUR"
+  },
+  {
+    "productId": 42381,
+    "isin": "IT0001079406",
+    "name": "INVESTIPER OBBLIGAZ.MEDIO TERMINE NOMINATIVO",
+    "currency": "EUR"
+  }
+]
+```
+
+Esito:
+
+- la query restituisce `20` risultati semantici
+- i risultati non includono il prodotto sorgente Investiper
+- i primi risultati sono prodotti in `EUR`, con `riskKiid` principalmente `3` o `4`, coerenti con il profilo sorgente nel mock attuale
+
+Nota:
+
+- la risoluzione sorgente oggi sceglie il match testuale migliore
+- se in futuro ci sono molti prodotti con nome simile, puo' servire una UI di disambiguazione o un criterio piu' esplicito
+- con il modello vero la similarita' tra prodotti dovrebbe migliorare perche' l'embedding sorgente sara' semantico, non mock/hash
+
+#### 16. Validazione qualitativa "simili a ISIN"
+
+Sono stati analizzati manualmente due casi di ricerca per prodotto simile usando ISIN.
+
+Caso 1:
+
+```text
+fondo simile a AT0000495304
+```
+
+Risultati osservati:
+
+```text
+GG00B1YQ6R97
+AT0000A1TB42
+AT0000A1JU74
+```
+
+Valutazione:
+
+- `AT0000495304` non e' presente in `src/products.json`
+- quindi la POC non puo' recuperare davvero il prodotto sorgente dal dataset locale
+- i risultati non sono affidabili come "prodotti simili"
+
+Dettaglio qualitativo:
+
+- `GG00B1YQ6R97`: poco convincente, GBP, non Raiffeisen, asset `Altro`, rischio non presente
+- `AT0000A1TB42`: parzialmente plausibile per societa', EUR e rischio, ma differisce su sostenibilita', PAI e cedola
+- `AT0000A1JU74`: solo parzialmente simile, rischio diverso e cedola/sostenibilita' diverse
+
+Conclusione:
+
+- serve gestire esplicitamente il caso `prodotto sorgente non trovato`
+- in quel caso la UI o i log dovrebbero dire che non e' stata fatta una vera ricerca per similarita' prodotto
+
+Caso 2:
+
+```text
+fondo simile a AT0000712716
+```
+
+Prodotto sorgente:
+
+```json
+{
+  "productId": 8350,
+  "isin": "AT0000712716",
+  "name": "RAIFFEISEN-HEALTHCARE AKTIENFONDS",
+  "managementCompany": "RAIFFEISEN KAPITALANLAGE GES.MBH",
+  "riskKiid": 5,
+  "currency": "EUR",
+  "coupon": false,
+  "sustainable": true,
+  "ecoSustainable": true,
+  "pai": true,
+  "isPlaced": true
+}
+```
+
+Risultati osservati:
+
+```text
+AT0000677927
+AT0000A0LSJ0
+AT0000765599
+```
+
+Valutazione:
+
+- `AT0000677927`: molto simile sui campi disponibili
+- `AT0000A0LSJ0`: molto simile sui campi disponibili
+- `AT0000765599`: abbastanza simile, ma con `riskKiid` 4 invece di 5
+
+Campi condivisi rilevanti:
+
+- societa' Raiffeisen
+- valuta EUR
+- fondo
+- cedola no
+- sostenibile si
+- eco-sostenibile si
+- PAI si
+- collocato si
+- rischio vicino o uguale
+
+Conclusione:
+
+- quando il prodotto sorgente e' presente nel dataset, la modalita' "simili a ISIN" produce risultati plausibili sui campi oggi disponibili
+- manca pero' informazione settoriale/tematica ricca: il sorgente e' Healthcare, ma i risultati non sono necessariamente Healthcare
+- molte asset class nel dataset sono `Altro`, quindi la POC non puo' ancora distinguere bene settore, strategia o sottocategoria reale
+
+Miglioramento consigliato:
+
+- aggiungere descrizioni prodotto o campi asset class piu' informativi
+- gestire esplicitamente sorgente non trovato
+- loggare quale prodotto sorgente e' stato scelto
+- eventualmente mostrare disambiguazione se piu' prodotti matchano lo stesso nome/ISIN
+
+### Stato attuale importante
+
+La POC oggi funziona come flusso end-to-end e la ricerca semantica nella UI indicizza il dataset locale:
+
+In pratica:
+
+```text
+src/products.json -> indice semantico -> ricerca
+```
+
+Il catalogo classico continua invece a usare:
+
+```text
+prodotti caricati dalla tabella/API -> tabella standard
+```
+
+Questa separazione e' intenzionale per la POC: la ricerca classica resta invariata, mentre la semantica lavora su un dataset locale piu' ampio e stabile.
 
 ### Limiti attuali
 
@@ -916,95 +1441,31 @@ Conseguenza:
 - funziona peggio con frasi naturali piu' ambigue
 - non capisce davvero il significato come farebbe un modello embedding
 
-#### 2. Ranking numerico non ancora business-aware
+#### 2. Modalita' "simili a prodotto" da rifinire
 
-Query come:
+La modalita' "simili a X" e' implementata, ma resta da rifinire.
 
-```text
-fondi con rischio kiid basso
-```
+Miglioramenti possibili:
 
-non garantiscono ancora che `riskKiid: 3` venga sempre prima di `riskKiid: 4`.
+- mostrare nei log il punteggio usato per scegliere il prodotto sorgente
+- gestire disambiguazione se piu' prodotti matchano lo stesso nome
+- consentire query per ISIN esplicito
+- aggiungere un titolo UI tipo `Prodotti simili a ...`
+- combinare similarita' prodotto con vincoli business aggiuntivi, per esempio `simili a investiper ma meno rischiosi`
 
-Motivo:
+#### 3. Embedding ancora mock
 
-- `riskKiid` oggi entra come testo
-- lo score e' principalmente vettoriale/mock
-- manca un reranking esplicito per campi numerici e booleani
+La POC simula il comportamento del modello, ma non usa ancora un transformer reale.
 
-#### 3. Dataset JSON non ancora usato dalla UI
+Conseguenza:
 
-`src/products.json` e' pronto, ma deve essere collegato alla ricerca per indicizzare 509 prodotti invece dei soli prodotti caricati a pagina.
-
-#### 4. Modalita' "simili a prodotto" non ancora esposta
-
-La funzione tecnica:
-
-```ts
-findSimilarProducts(productId, index)
-```
-
-esiste, ma non e' ancora collegata a:
-
-- UI
-- parsing query tipo "fondi simili a investiper"
-- ricerca del prodotto sorgente per nome/ISIN
+- funziona bene con query esplicite e regole business
+- funziona peggio con frasi naturali molto ambigue
+- non capisce davvero il significato come farebbe un modello embedding
 
 ### Prossimi task consigliati
 
-#### Task 1 - Collegare `src/products.json` alla ricerca semantica
-
-Obiettivo:
-
-- usare i 509 prodotti locali come indice semantico della POC
-- non limitarsi ai 10 prodotti caricati dalla tabella
-
-Possibile approccio:
-
-1. importare `src/products.json` nel componente catalogo o in un servizio dedicato
-2. passare quel dataset a `useSemanticProductSearch`
-3. mantenere la tabella standard per la ricerca classica
-4. quando la ricerca semantica e' attiva, mostrare i risultati dal JSON
-
-Decisione da prendere:
-
-- usare sempre `products.json` per la semantica
-- oppure usare `products.json` solo in modalita' POC/debug
-
-#### Task 2 - Aggiungere ranking business sopra lo score semantico
-
-Obiettivo:
-
-- rendere coerenti query esplicite su campi finanziari
-
-Regole consigliate:
-
-- se la query contiene `rischio basso`, favorire `riskKiid` piu' basso
-- se la query contiene `prudente` o `difensivo`, favorire `riskKiid <= 3`
-- se la query contiene `rischio alto` o `dinamico`, favorire `riskKiid >= 5`
-- se la query contiene `kiid 3`, favorire `riskKiid === 3`
-- se la query contiene `sostenibile`, favorire `sustainable === true`
-- se la query contiene `eco`, favorire `ecoSustainable === true`
-- se la query contiene `pai`, favorire `pai === true`
-- se la query contiene `cedola`, favorire `coupon === true`
-- se la query contiene `euro` o `eur`, favorire `currency === "EUR"`
-
-Output desiderato:
-
-```ts
-finalScore = semanticScore + businessBoost
-```
-
-e nei log:
-
-```text
-semanticScore
-businessBoost
-finalScore
-matchedRules
-```
-
-#### Task 3 - Mostrare score e motivazioni in modalita' POC
+#### Task 1 - Mostrare score e motivazioni in modalita' POC
 
 Obiettivo:
 
@@ -1024,28 +1485,21 @@ Per demo tecnica, almeno la console deve mostrare:
 - score finale
 - motivi del boost
 
-#### Task 4 - Implementare "simili a X"
+#### Task 2 - Rifinire "simili a X"
 
 Obiettivo:
 
-supportare query come:
+- rendere la modalita' piu' spiegabile e robusta
 
-```text
-trovami fondi simili a investiper
-```
+Micro-task consigliati:
 
-Micro-task:
+1. loggare candidati sorgente e punteggio di match
+2. gestire casi con piu' prodotti sorgente simili
+3. supportare query per ISIN, per esempio `simili a IT0001079398`
+4. valutare vincoli aggiuntivi, per esempio `simili a investiper ma meno rischiosi`
+5. valutare un titolo UI dedicato, senza sporcare troppo il catalogo reale
 
-1. rilevare pattern `simili a ...`
-2. estrarre il nome prodotto cercato
-3. cercare nel catalogo locale il prodotto sorgente per nome o ISIN
-4. se ci sono piu' match, scegliere il migliore o chiedere disambiguazione
-5. recuperare il suo embedding
-6. chiamare `findSimilarProducts(productId, index)`
-7. escludere il prodotto sorgente dai risultati
-8. mostrare risultati con titolo tipo `Prodotti simili a ...`
-
-#### Task 5 - Sostituire il mock con `transformers.js`
+#### Task 3 - Sostituire il mock con `transformers.js`
 
 Obiettivo:
 
@@ -1074,7 +1528,7 @@ Aspetti da gestire:
 
 Nota: il modello vero migliora il significato, ma non sostituisce il ranking business.
 
-#### Task 6 - Cache embedding prodotti
+#### Task 4 - Cache embedding prodotti
 
 Obiettivo:
 
@@ -1087,7 +1541,7 @@ Opzioni:
 - `IndexedDB` se gli embedding diventano pesanti
 - JSON precomputato in una fase successiva
 
-#### Task 7 - Preparare checklist query demo
+#### Task 5 - Preparare checklist query demo
 
 Query minime da usare per validazione:
 
@@ -1112,18 +1566,17 @@ Per ogni query va verificato:
 
 Ordine pragmatico:
 
-1. collegare `src/products.json` alla ricerca semantica
-2. aggiungere reranking business
-3. migliorare log con `semanticScore`, `businessBoost`, `finalScore`
-4. validare con query demo
-5. implementare "simili a X"
-6. integrare `transformers.js`
-7. aggiungere cache embedding
+1. mostrare o rendere piu' leggibili score e motivazioni in modalita' POC
+2. rifinire "simili a X"
+3. preparare checklist query demo completa
+4. integrare `transformers.js`
+5. aggiungere cache embedding
 
 Motivo:
 
-- prima serve un dataset abbastanza ampio
-- poi serve ranking coerente con le regole finanziarie esplicite
+- ora il dataset locale e' collegato e abbastanza ampio per testare query realistiche
+- il reranking business copre casi positivi, negativi e composti
+- la modalita' prodotti simili e' presente, ma puo' essere resa piu' spiegabile
 - solo dopo conviene introdurre il modello vero
 
-Altrimenti il modello rischia di migliorare la semantica generale, ma lasciare irrisolti problemi business come `riskKiid` ordinato male.
+Altrimenti il modello rischia di migliorare la semantica generale, ma lasciare poco chiaro perche' un prodotto salga o scenda nel ranking.

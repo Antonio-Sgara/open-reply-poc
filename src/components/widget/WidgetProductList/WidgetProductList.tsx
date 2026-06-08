@@ -34,6 +34,7 @@ import { ReactiveDateRangePicker } from "components/ReactiveDateRangePicker/Reac
 import InfoAlert from "components/InfoAlert";
 import { useSemanticProductSearch } from "../../../semantic-search/useSemanticProductSearch";
 import { semanticDebugLog } from "../../../semantic-search/debug";
+import localSemanticProducts from "../../../products.json";
 import "./WidgetProductList.scss";
 
 interface IProps {
@@ -84,6 +85,10 @@ const WidgetProductsList: FC<IProps> = ({
   );
   const [errorAdvancedSearch, setErrorAdvancedSearch] = useState(false);
   const [pastMonthLastDay, setPastMonthLastDay] = useState("");
+  const semanticDatasetProducts = useMemo(
+    () => localSemanticProducts as any[],
+    []
+  );
   const {
     semanticQuery,
     setSemanticQuery,
@@ -93,7 +98,7 @@ const WidgetProductsList: FC<IProps> = ({
     isSemanticSearchActive,
     searchSemantically,
     clearSemanticSearch
-  } = useSemanticProductSearch<any>(products);
+  } = useSemanticProductSearch<any>(semanticDatasetProducts);
 
   const firstSearchProducts = (resetInputSearch = false) => {
     if (savedFilters && savedFilters?.filters) {
@@ -694,7 +699,8 @@ const WidgetProductsList: FC<IProps> = ({
             event.preventDefault();
             semanticDebugLog("Submit form ricerca semantica", {
               semanticQuery,
-              loadedProducts: products?.length ?? 0
+              loadedTableProducts: products?.length ?? 0,
+              semanticDatasetProducts: semanticDatasetProducts.length
             });
             searchSemantically();
           }}
@@ -712,14 +718,16 @@ const WidgetProductsList: FC<IProps> = ({
               value={semanticQuery}
               onChange={event => setSemanticQuery(event.target.value)}
               placeholder="Es. fondi sostenibili con rischio basso in euro"
-              disabled={isIndexingSemanticProducts || !products?.length}
+              disabled={
+                isIndexingSemanticProducts || !semanticDatasetProducts.length
+              }
             />
             <button
               className="widgetProductsList__semanticSearchButton"
               type="submit"
               disabled={
                 isIndexingSemanticProducts ||
-                !products?.length ||
+                !semanticDatasetProducts.length ||
                 !semanticQuery.trim()
               }
             >
@@ -739,8 +747,8 @@ const WidgetProductsList: FC<IProps> = ({
             {isIndexingSemanticProducts
               ? "Preparazione indice semantico..."
               : isSemanticSearchActive
-                ? `${semanticResults.length} risultati semantici sul set caricato`
-                : "La ricerca interpreta una frase libera sui prodotti caricati."}
+                ? `${semanticResults.length} risultati semantici su ${semanticDatasetProducts.length} prodotti`
+                : `La ricerca interpreta una frase libera su ${semanticDatasetProducts.length} prodotti della POC.`}
           </div>
         </form>
       )}
