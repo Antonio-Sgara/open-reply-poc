@@ -647,3 +647,483 @@ La logica della POC e' questa:
 - mostrare i risultati nella UI del catalogo
 
 La POC non deve essere perfetta: deve essere chiara, credibile e dimostrare che una ricerca per significato puo' aiutare davvero a trovare prodotti finanziari.
+
+---
+
+## Aggiornamento operativo - 2026-06-08
+
+Questa sezione descrive lo stato attuale della POC dopo i primi interventi tecnici.
+
+### Task svolti
+
+#### 1. Creata la base tecnica della ricerca semantica
+
+E' stata creata la cartella:
+
+```text
+src/semantic-search/
+```
+
+con questi file:
+
+```text
+src/semantic-search/semanticTypes.ts
+src/semantic-search/buildProductSemanticText.ts
+src/semantic-search/similarity.ts
+src/semantic-search/embeddingService.ts
+src/semantic-search/semanticSearch.ts
+src/semantic-search/useSemanticProductSearch.ts
+src/semantic-search/debug.ts
+```
+
+Responsabilita' dei file:
+
+- `semanticTypes.ts`: tipi TypeScript per prodotto semantico, embedding, item indicizzato e risultato.
+- `buildProductSemanticText.ts`: trasforma un prodotto in testo descrittivo stabile.
+- `similarity.ts`: implementa `cosineSimilarity`.
+- `embeddingService.ts`: contiene un embedding mock/deterministico usato per simulare il modello.
+- `semanticSearch.ts`: costruisce l'indice, cerca per significato e contiene la base per prodotti simili.
+- `useSemanticProductSearch.ts`: hook React che collega prodotti, indice, query e risultati.
+- `debug.ts`: abilita/disabilita log di debug della pipeline semantica.
+
+#### 2. Implementata la generazione del testo semantico
+
+La funzione:
+
+```ts
+buildProductSemanticText(product)
+```
+
+usa i campi reali dei prodotti:
+
+- `productId`
+- `isin`
+- `name` / `productName`
+- `managementCompany`
+- `sicav`
+- `productType`
+- `caaFirstLevelType`
+- `commercialAssetFirstLevel`
+- `commercialAssetSecondLevel`
+- `commercialAssetThirdLevel`
+- `currency`
+- `riskKiid`
+- `sustainable`
+- `ecoSustainable`
+- `pai`
+- `bestInClass`
+- `coupon`
+- `isPlaced`
+- `preferred`
+
+Inoltre traduce `riskKiid` in un profilo testuale indicativo:
+
+- `1-2`: rischio basso, profilo prudente
+- `3-4`: rischio medio-basso, profilo moderato
+- `5`: rischio medio
+- `6-7`: rischio alto, profilo dinamico
+
+Nota: questa regola e' utile per il mock, ma andra' raffinata con ranking business.
+
+#### 3. Implementato embedding mock
+
+Per ora non e' ancora stato collegato `transformers.js`.
+
+Il file:
+
+```text
+src/semantic-search/embeddingService.ts
+```
+
+genera un vettore deterministico basato su token, sinonimi e hashing.
+
+Questo serve a simulare il comportamento futuro:
+
+```text
+testo -> embedding -> similarity -> ranking
+```
+
+La parte da sostituire con il modello vero e':
+
+```ts
+embedText(text)
+```
+
+Il resto della pipeline dovrebbe rimanere quasi invariato.
+
+#### 4. Implementata ricerca semantica end-to-end
+
+Sono state implementate:
+
+```ts
+buildSemanticIndex(products)
+searchProductsByMeaning(query, index)
+findSimilarProducts(productId, index)
+```
+
+La ricerca oggi:
+
+1. riceve la query utente
+2. genera l'embedding mock della query
+3. confronta la query con gli embedding prodotto
+4. calcola cosine similarity
+5. ordina per score decrescente
+6. restituisce i risultati
+
+#### 5. Integrata una UI minima nel catalogo prodotti
+
+Nel componente:
+
+```text
+src/components/widget/WidgetProductList/WidgetProductList.tsx
+```
+
+e' stato aggiunto un pannello:
+
+```text
+Ricerca semantica
+```
+
+con:
+
+- input testuale per query libera
+- bottone `Cerca`
+- bottone `Reset`
+- stato di indicizzazione/risultati
+- sostituzione temporanea della lista prodotti con i risultati semantici quando la ricerca e' attiva
+
+Lo stile e' stato aggiunto in:
+
+```text
+src/components/widget/WidgetProductList/WidgetProductList.scss
+```
+
+#### 6. Aggiunti log di debug
+
+Il file:
+
+```text
+src/semantic-search/debug.ts
+```
+
+contiene:
+
+```ts
+export const SEMANTIC_SEARCH_DEBUG = true;
+```
+
+Quando e' `true`, la console mostra log prefissati con:
+
+```text
+[semantic-search]
+```
+
+La pipeline logga:
+
+- submit della query utente
+- numero di prodotti caricati
+- avvio e fine indicizzazione
+- testi semantici prodotti
+- token dell'embedding mock
+- dimensioni attive del vettore
+- query normalizzata
+- score calcolati
+- risultati ordinati in `console.table`
+
+Per spegnere i log:
+
+```ts
+export const SEMANTIC_SEARCH_DEBUG = false;
+```
+
+#### 7. Verifica tecnica eseguita
+
+Sono stati eseguiti:
+
+```text
+npm run typecheck
+npm run build
+```
+
+Entrambi passano.
+
+Restano warning gia' presenti nel progetto:
+
+- deprecazioni Sass `@import`
+- warning Vite/lightningcss su `:export`
+- warning chunk size
+
+Questi warning non bloccano la build e non sono stati introdotti dalla logica semantica.
+
+#### 8. Aggiunto dataset prodotti locale
+
+E' stato aggiunto:
+
+```text
+src/products.json
+```
+
+Il file iniziale conteneva `510` prodotti.
+
+E' stata fatta una deduplica:
+
+- duplicati per `productId`: `0`
+- duplicati per `isin`: `1`
+- prodotti finali: `509`
+
+Duplicato rimosso:
+
+```json
+{
+  "productId": 41947,
+  "isin": "IM00B1Z40704",
+  "name": "GULF INVESTMENT FUND PLC (USD) MUTUAL FUND",
+  "currency": "USD"
+}
+```
+
+Il file finale non ha duplicati per `productId` o `isin`.
+
+### Stato attuale importante
+
+La POC oggi funziona come flusso end-to-end, ma la ricerca semantica nella UI indicizza ancora i prodotti presenti nello stato `products` del componente catalogo.
+
+In pratica:
+
+```text
+prodotti caricati dalla tabella/API -> indice semantico -> ricerca
+```
+
+Il nuovo file:
+
+```text
+src/products.json
+```
+
+non e' ancora collegato alla pipeline UI.
+
+Quindi, finche' non viene collegato, la ricerca continua a lavorare sul batch caricato dalla tabella, non sui 509 prodotti del JSON.
+
+### Limiti attuali
+
+#### 1. Embedding ancora mock
+
+La POC simula il comportamento del modello, ma non usa ancora un transformer reale.
+
+Conseguenza:
+
+- funziona bene con parole esplicite presenti o quasi presenti nei campi
+- funziona peggio con frasi naturali piu' ambigue
+- non capisce davvero il significato come farebbe un modello embedding
+
+#### 2. Ranking numerico non ancora business-aware
+
+Query come:
+
+```text
+fondi con rischio kiid basso
+```
+
+non garantiscono ancora che `riskKiid: 3` venga sempre prima di `riskKiid: 4`.
+
+Motivo:
+
+- `riskKiid` oggi entra come testo
+- lo score e' principalmente vettoriale/mock
+- manca un reranking esplicito per campi numerici e booleani
+
+#### 3. Dataset JSON non ancora usato dalla UI
+
+`src/products.json` e' pronto, ma deve essere collegato alla ricerca per indicizzare 509 prodotti invece dei soli prodotti caricati a pagina.
+
+#### 4. Modalita' "simili a prodotto" non ancora esposta
+
+La funzione tecnica:
+
+```ts
+findSimilarProducts(productId, index)
+```
+
+esiste, ma non e' ancora collegata a:
+
+- UI
+- parsing query tipo "fondi simili a investiper"
+- ricerca del prodotto sorgente per nome/ISIN
+
+### Prossimi task consigliati
+
+#### Task 1 - Collegare `src/products.json` alla ricerca semantica
+
+Obiettivo:
+
+- usare i 509 prodotti locali come indice semantico della POC
+- non limitarsi ai 10 prodotti caricati dalla tabella
+
+Possibile approccio:
+
+1. importare `src/products.json` nel componente catalogo o in un servizio dedicato
+2. passare quel dataset a `useSemanticProductSearch`
+3. mantenere la tabella standard per la ricerca classica
+4. quando la ricerca semantica e' attiva, mostrare i risultati dal JSON
+
+Decisione da prendere:
+
+- usare sempre `products.json` per la semantica
+- oppure usare `products.json` solo in modalita' POC/debug
+
+#### Task 2 - Aggiungere ranking business sopra lo score semantico
+
+Obiettivo:
+
+- rendere coerenti query esplicite su campi finanziari
+
+Regole consigliate:
+
+- se la query contiene `rischio basso`, favorire `riskKiid` piu' basso
+- se la query contiene `prudente` o `difensivo`, favorire `riskKiid <= 3`
+- se la query contiene `rischio alto` o `dinamico`, favorire `riskKiid >= 5`
+- se la query contiene `kiid 3`, favorire `riskKiid === 3`
+- se la query contiene `sostenibile`, favorire `sustainable === true`
+- se la query contiene `eco`, favorire `ecoSustainable === true`
+- se la query contiene `pai`, favorire `pai === true`
+- se la query contiene `cedola`, favorire `coupon === true`
+- se la query contiene `euro` o `eur`, favorire `currency === "EUR"`
+
+Output desiderato:
+
+```ts
+finalScore = semanticScore + businessBoost
+```
+
+e nei log:
+
+```text
+semanticScore
+businessBoost
+finalScore
+matchedRules
+```
+
+#### Task 3 - Mostrare score e motivazioni in modalita' POC
+
+Obiettivo:
+
+- rendere la demo spiegabile
+- capire perche' un prodotto e' stato ordinato in una certa posizione
+
+Opzioni:
+
+- aggiungere una colonna temporanea `score`
+- aggiungere una label sotto il nome prodotto
+- oppure loggare soltanto in console per non sporcare la UI
+
+Per demo tecnica, almeno la console deve mostrare:
+
+- score semantico
+- boost business
+- score finale
+- motivi del boost
+
+#### Task 4 - Implementare "simili a X"
+
+Obiettivo:
+
+supportare query come:
+
+```text
+trovami fondi simili a investiper
+```
+
+Micro-task:
+
+1. rilevare pattern `simili a ...`
+2. estrarre il nome prodotto cercato
+3. cercare nel catalogo locale il prodotto sorgente per nome o ISIN
+4. se ci sono piu' match, scegliere il migliore o chiedere disambiguazione
+5. recuperare il suo embedding
+6. chiamare `findSimilarProducts(productId, index)`
+7. escludere il prodotto sorgente dai risultati
+8. mostrare risultati con titolo tipo `Prodotti simili a ...`
+
+#### Task 5 - Sostituire il mock con `transformers.js`
+
+Obiettivo:
+
+- usare un vero modello embedding lato frontend
+
+File principale da modificare:
+
+```text
+src/semantic-search/embeddingService.ts
+```
+
+Interfaccia da mantenere:
+
+```ts
+embedText(text): Promise<number[]>
+```
+
+Aspetti da gestire:
+
+- caricamento modello una sola volta
+- stato loading
+- errori
+- performance primo avvio
+- eventuale download modello
+- compatibilita' browser/Vite
+
+Nota: il modello vero migliora il significato, ma non sostituisce il ranking business.
+
+#### Task 6 - Cache embedding prodotti
+
+Obiettivo:
+
+- evitare di rigenerare gli embedding dei prodotti a ogni caricamento
+
+Opzioni:
+
+- cache in memoria
+- `localStorage` per MVP
+- `IndexedDB` se gli embedding diventano pesanti
+- JSON precomputato in una fase successiva
+
+#### Task 7 - Preparare checklist query demo
+
+Query minime da usare per validazione:
+
+```text
+fondi sostenibili con rischio basso in euro
+fondi con rischio kiid basso
+prodotti con cedola
+fondi obbligazionari corporate
+fondi dinamici con rischio alto
+prodotti eco sostenibili con pai
+fondi simili a investiper
+```
+
+Per ogni query va verificato:
+
+- i primi risultati sono coerenti?
+- i campi business confermano il ranking?
+- i log spiegano perche' un prodotto e' salito?
+- ci sono risultati sorprendenti da correggere?
+
+### Ordine consigliato da qui
+
+Ordine pragmatico:
+
+1. collegare `src/products.json` alla ricerca semantica
+2. aggiungere reranking business
+3. migliorare log con `semanticScore`, `businessBoost`, `finalScore`
+4. validare con query demo
+5. implementare "simili a X"
+6. integrare `transformers.js`
+7. aggiungere cache embedding
+
+Motivo:
+
+- prima serve un dataset abbastanza ampio
+- poi serve ranking coerente con le regole finanziarie esplicite
+- solo dopo conviene introdurre il modello vero
+
+Altrimenti il modello rischia di migliorare la semantica generale, ma lasciare irrisolti problemi business come `riskKiid` ordinato male.
