@@ -5,6 +5,8 @@
   "type": "module",
   "proxy": "https://rep-test.i.openreply.eu/wmpbe",
   "scripts": {
+    "api": "node server/index.js",
+    "dev:all": "npm run api & npm run dev",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
@@ -12,10 +14,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@reduxjs/toolkit": "^2.9.2",
     "axios": "^1.12.2",
     "axios-auth-refresh": "^3.3.6",
     "bootstrap": "^5.3.8",
+    "express": "^5.2.1",
     "history": "^4.10.1",
     "react": "^18.3.1",
     "react-bootstrap": "^2.10.10",

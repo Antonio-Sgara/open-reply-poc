@@ -1,0 +1,27 @@
+@import "../../styles/variables";
+
+.financialTable__table {
+  display: table;
+  width: 100%;
+}
+
+.financialTable__tableRow {
+  display: table-row;
+  font-size: 12px;
+}
+
+.financialTable__tableCell {
+  display: table-cell;
+}
+
+.financialTable__financialRow {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  height: 100%;
+  margin-bottom: 5px;
+  min-height: 58px;
+  padding: 10px 10px 10px 30px;
+  position: relative;
+  width: 100%;
+}

@@ -22,6 +22,11 @@ export interface SemanticProductSource {
   sustainable?: boolean;
   ecoSustainable?: boolean;
   bicType?: string;
+  semanticText?: string;
+  semanticEmbedding?: SemanticEmbedding;
+  semanticEmbeddingGeneratedAt?: string;
+  semanticEmbeddingModel?: string;
+  semanticEmbeddingModelVersion?: string;
 }
 
 export interface SemanticProductIndexItem<TProduct = SemanticProductSource> {

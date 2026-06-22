@@ -10,25 +10,103 @@ import {
   SemanticProductSource
 } from "./semanticTypes";
 
+const normalizeText = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const calculateRelativeRiskBoost = (
+  constraintQuery: string | undefined,
+  sourceProduct: SemanticProductSource,
+  product: SemanticProductSource,
+  matchedRules: string[]
+) => {
+  if (
+    typeof sourceProduct.riskKiid !== "number" ||
+    typeof product.riskKiid !== "number" ||
+    !constraintQuery
+  ) {
+    return 0;
+  }
+
+  const normalizedConstraintQuery = normalizeText(constraintQuery);
+  const asksLessRisk =
+    normalizedConstraintQuery.includes("meno risch") ||
+    normalizedConstraintQuery.includes("rischio minore") ||
+    normalizedConstraintQuery.includes("piu prudent") ||
+    normalizedConstraintQuery.includes("piu difensiv");
+  const asksMoreRisk =
+    normalizedConstraintQuery.includes("piu risch") ||
+    normalizedConstraintQuery.includes("rischio maggiore") ||
+    normalizedConstraintQuery.includes("piu dinamic") ||
+    normalizedConstraintQuery.includes("piu aggressiv");
+
+  if (asksLessRisk) {
+    if (product.riskKiid < sourceProduct.riskKiid) {
+      const boost = (sourceProduct.riskKiid - product.riskKiid) * 0.12;
+      matchedRules.push(`riskKiid lower than source ${sourceProduct.riskKiid}`);
+      return boost;
+    }
+
+    if (product.riskKiid > sourceProduct.riskKiid) {
+      const penalty = (product.riskKiid - sourceProduct.riskKiid) * -0.12;
+      matchedRules.push(`riskKiid higher than source penalty ${sourceProduct.riskKiid}`);
+      return penalty;
+    }
+  }
+
+  if (asksMoreRisk) {
+    if (product.riskKiid > sourceProduct.riskKiid) {
+      const boost = (product.riskKiid - sourceProduct.riskKiid) * 0.12;
+      matchedRules.push(`riskKiid higher than source ${sourceProduct.riskKiid}`);
+      return boost;
+    }
+
+    if (product.riskKiid < sourceProduct.riskKiid) {
+      const penalty = (sourceProduct.riskKiid - product.riskKiid) * -0.12;
+      matchedRules.push(`riskKiid lower than source penalty ${sourceProduct.riskKiid}`);
+      return penalty;
+    }
+  }
+
+  return 0;
+};
+
 export const buildSemanticIndex = async <TProduct extends SemanticProductSource>(
   products: TProduct[]
 ): Promise<SemanticProductIndexItem<TProduct>[]> => {
   semanticDebugLog("Costruzione indice prodotti", {
-    productsCount: products.length
+    productsCount: products.length,
+    precomputedEmbeddings: products.filter(product =>
+      Array.isArray(product.semanticEmbedding)
+    ).length
   });
 
-  const index = await Promise.all(
-    products.map(async product => {
-      const semanticText = buildProductSemanticText(product);
+  const index: SemanticProductIndexItem<TProduct>[] = [];
 
-      return {
-        productId: `${product.productId ?? product.isin ?? product.name ?? ""}`,
-        semanticText,
-        embedding: await embedText(semanticText),
-        product
-      };
-    })
-  );
+  for (const [position, product] of products.entries()) {
+    const semanticText = product.semanticText ?? buildProductSemanticText(product);
+
+    index.push({
+      productId: `${product.productId ?? product.isin ?? product.name ?? ""}`,
+      semanticText,
+      embedding: Array.isArray(product.semanticEmbedding)
+        ? product.semanticEmbedding
+        : await embedText(semanticText),
+      product
+    });
+
+    const indexedProducts = position + 1;
+    if (indexedProducts % 25 === 0 || indexedProducts === products.length) {
+      semanticDebugLog("Avanzamento indice prodotti", {
+        indexedProducts,
+        productsCount: products.length
+      });
+    }
+  }
 
   semanticDebugGroup("Indice prodotti costruito", () => {
     console.table(
@@ -65,15 +143,42 @@ export const searchProductsByMeaning = async <
   );
 
   if (similarProductsIntent) {
+    if (!similarProductsIntent.sourceProduct) {
+      semanticDebugGroup("Prodotto sorgente non trovato", () => {
+        console.log("Query:", normalizedQuery);
+        console.log("Ricerca sorgente:", similarProductsIntent.sourceQuery);
+        console.log("Mode:", "similar-products");
+        console.log("Sorgente ambigua:", similarProductsIntent.ambiguousSource);
+        console.table(similarProductsIntent.sourceCandidates);
+        console.log("Risultati:", []);
+      });
+
+      return [];
+    }
+
     const similarResults = findSimilarProducts(
       similarProductsIntent.sourceProduct.productId,
       index,
-      limit
+      limit,
+      similarProductsIntent.constraintQuery
     );
 
     semanticDebugGroup("Risultati prodotti simili", () => {
       console.log("Query:", normalizedQuery);
       console.log("Ricerca sorgente:", similarProductsIntent.sourceQuery);
+      console.log(
+        "Vincoli aggiuntivi:",
+        similarProductsIntent.constraintQuery ?? "nessuno"
+      );
+      console.log("Sorgente ambigua:", similarProductsIntent.ambiguousSource);
+      console.table(
+        similarProductsIntent.sourceCandidates.map(candidate => ({
+          productId: candidate.productId,
+          isin: candidate.isin,
+          name: candidate.name,
+          matchScore: candidate.score
+        }))
+      );
       console.log("Prodotto sorgente:", {
         productId: similarProductsIntent.sourceProduct.productId,
         name:
@@ -86,7 +191,9 @@ export const searchProductsByMeaning = async <
       console.table(
         similarResults.map((result, position) => ({
           position: position + 1,
-          similarityScore: Number(result.score.toFixed(4)),
+          similarityScore: Number((result.semanticScore ?? result.score).toFixed(4)),
+          businessBoost: Number((result.businessBoost ?? 0).toFixed(4)),
+          finalScore: Number((result.finalScore ?? result.score).toFixed(4)),
           matchedRules: result.matchedRules?.join(", "),
           productId: result.product.productId,
           name: result.product.name ?? result.product.productName,
@@ -166,7 +273,8 @@ export const searchProductsByMeaning = async <
 export const findSimilarProducts = <TProduct extends SemanticProductSource>(
   productId: string | number,
   index: SemanticProductIndexItem<TProduct>[],
-  limit = 10
+  limit = 10,
+  constraintQuery?: string
 ): SemanticProductSearchResult<TProduct>[] => {
   const sourceProduct = index.find(item => item.productId === `${productId}`);
   if (!sourceProduct) return [];
@@ -178,18 +286,39 @@ export const findSimilarProducts = <TProduct extends SemanticProductSource>(
         sourceProduct.embedding,
         indexItem.embedding
       );
+      const businessRanking = constraintQuery
+        ? calculateBusinessRanking(constraintQuery, indexItem.product)
+        : { businessBoost: 0, matchedRules: [] };
+      const matchedRules = [
+        `similar to ${sourceProduct.productId}`,
+        ...businessRanking.matchedRules
+      ];
+      const relativeRiskBoost = calculateRelativeRiskBoost(
+        constraintQuery,
+        sourceProduct.product,
+        indexItem.product,
+        matchedRules
+      );
+      const businessBoost = businessRanking.businessBoost + relativeRiskBoost;
+      const finalScore = similarityScore + businessBoost;
 
       return {
         product: indexItem.product,
-        score: similarityScore,
+        score: finalScore,
         semanticScore: similarityScore,
-        businessBoost: 0,
-        finalScore: similarityScore,
-        matchedRules: [`similar to ${sourceProduct.productId}`],
+        businessBoost,
+        finalScore,
+        matchedRules,
         semanticText: indexItem.semanticText
       };
     })
     .filter(result => result.score > 0)
-    .sort((first, second) => second.score - first.score)
+    .sort((first, second) => {
+      if ((second.finalScore ?? second.score) !== (first.finalScore ?? first.score)) {
+        return (second.finalScore ?? second.score) - (first.finalScore ?? first.score);
+      }
+
+      return (second.semanticScore ?? 0) - (first.semanticScore ?? 0);
+    })
     .slice(0, limit);
 };

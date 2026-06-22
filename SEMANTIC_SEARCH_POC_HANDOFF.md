@@ -1411,9 +1411,579 @@ Miglioramento consigliato:
 - loggare quale prodotto sorgente e' stato scelto
 - eventualmente mostrare disambiguazione se piu' prodotti matchano lo stesso nome/ISIN
 
+#### 17. Gestito "prodotto sorgente non trovato"
+
+La modalita' "simili a X" ora distingue correttamente:
+
+- intento `simili a X` non presente: usa la ricerca semantica standard
+- intento `simili a X` presente e prodotto sorgente trovato: usa la ricerca prodotti simili
+- intento `simili a X` presente ma prodotto sorgente non trovato: restituisce zero risultati e non fa fallback alla ricerca standard
+
+File modificati:
+
+```text
+src/semantic-search/similarProducts.ts
+src/semantic-search/semanticSearch.ts
+```
+
+Comportamento implementato:
+
+```text
+fondo simile a AT0000495304
+```
+
+Dato che `AT0000495304` non e' presente in `src/products.json`, la POC restituisce:
+
+```text
+0 risultati semantici su 509 prodotti
+```
+
+e logga:
+
+```text
+Mode: similar-products
+Ricerca sorgente: at0000495304
+Risultati: []
+```
+
+Verifica di regressione:
+
+```text
+fondo simile a AT0000712716
+```
+
+continua a funzionare e restituisce `20` risultati, con primi match:
+
+```text
+AT0000677927
+AT0000A0LSJ0
+AT0000765599
+```
+
+Conclusione:
+
+- il caso "sorgente non trovato" ora e' esplicito e non produce piu' risultati fuorvianti
+- resta da migliorare la comunicazione UI, per esempio con un messaggio dedicato "prodotto sorgente non trovato nel dataset POC"
+
+#### 18. Log candidati sorgente per "simili a X"
+
+La risoluzione del prodotto sorgente ora restituisce anche i candidati trovati.
+
+File modificati:
+
+```text
+src/semantic-search/similarProducts.ts
+src/semantic-search/semanticSearch.ts
+```
+
+Nuovo tipo logico:
+
+```ts
+SimilarProductsSourceCandidate
+```
+
+Campi principali:
+
+- `productId`
+- `isin`
+- `name`
+- `score`
+- `product`
+
+Nei log della modalita' prodotti simili ora vengono mostrati:
+
+- query originale
+- stringa sorgente estratta
+- tabella candidati sorgente
+- punteggio di match testuale
+- prodotto sorgente scelto
+- risultati simili finali
+
+Verifiche:
+
+```text
+fondi simili a investiper
+```
+
+Risultato:
+
+- continua a restituire `20` risultati
+- nei log sono visibili i candidati sorgente, inclusi i prodotti Investiper presenti nel dataset
+
+```text
+fondo simile a AT0000495304
+```
+
+Risultato:
+
+- restituisce `0` risultati
+- nei log la tabella candidati sorgente e' vuota
+- non viene eseguito fallback alla ricerca semantica standard
+
+#### 19. Flag ambiguita' sorgente per "simili a X"
+
+La modalita' "simili a X" ora segnala nei log se la scelta del prodotto sorgente e' ambigua.
+
+File modificati:
+
+```text
+src/semantic-search/similarProducts.ts
+src/semantic-search/semanticSearch.ts
+```
+
+Logica:
+
+- vengono ordinati i candidati sorgente per `score`
+- se i primi due candidati hanno uno score molto vicino, viene impostato:
+
+```ts
+ambiguousSource: true
+```
+
+- la ricerca continua comunque scegliendo il primo candidato
+- la UI resta invariata
+- il dettaglio dell'ambiguita' resta nei log, coerentemente con la scelta POC di non sporcare il catalogo
+
+Soglia attuale:
+
+```ts
+AMBIGUOUS_SOURCE_SCORE_DISTANCE = 10
+```
+
+Nei log viene stampato:
+
+```text
+Sorgente ambigua: true/false
+```
+
+Questo serve soprattutto per query come:
+
+```text
+fondi simili a investiper
+```
+
+dove nel dataset possono esistere piu' prodotti compatibili con la stessa parola.
+
+#### 20. Vincoli business nella modalita' "simili a X"
+
+La modalita' "simili a X" ora supporta anche vincoli aggiuntivi scritti nella stessa query.
+
+File modificati:
+
+```text
+src/semantic-search/similarProducts.ts
+src/semantic-search/semanticSearch.ts
+```
+
+Query supportate:
+
+```text
+fondo simile a AT0000712716 senza cedola
+fondo simile a AT0000712716 con cedola
+fondo simile a AT0000712716 ma meno rischiosi
+```
+
+Logica implementata:
+
+- `similarProducts.ts` estrae la parte sorgente e la parte vincolo
+- se trova `ma`, divide la query in sorgente + vincolo
+- se trova un ISIN seguito da altri termini, usa l'ISIN come sorgente e il resto come vincolo
+- `semanticSearch.ts` calcola la similarita' rispetto al prodotto sorgente
+- se esiste un vincolo, applica anche il ranking business
+- per `meno rischiosi` e simili confronta il `riskKiid` del candidato con il `riskKiid` del prodotto sorgente
+
+Esempi di verifica UI:
+
+```text
+fondo simile a AT0000712716
+```
+
+Primi risultati osservati:
+
+```text
+AT0000677927 - riskKiid 5 - cedola No
+AT0000A0LSJ0 - riskKiid 5 - cedola No
+AT0000765599 - riskKiid 4 - cedola No
+```
+
+```text
+fondo simile a AT0000712716 ma meno rischiosi
+```
+
+Primi risultati osservati:
+
+```text
+FR0010213355 - riskKiid 1
+FR0010885210 - riskKiid 1
+FR0007493549 - riskKiid 1
+AT0000785209 - riskKiid 2
+AT0000859541 - riskKiid 2
+```
+
+```text
+fondo simile a AT0000712716 con cedola
+```
+
+Primi risultati osservati:
+
+```text
+AT0000A0PG42 - cedola Si'
+AT0000A0PG34 - cedola Si'
+AT0000A0PG59 - cedola Si'
+AT0000A2E091 - cedola Si'
+AT0000859541 - cedola Si'
+```
+
+Nei log della console ora vengono mostrati:
+
+- query originale
+- prodotto sorgente scelto
+- candidati sorgente
+- eventuale sorgente ambigua
+- vincoli aggiuntivi, oppure `nessuno`
+- score semantico
+- boost business
+- score finale
+- regole applicate
+
+Nota:
+
+- la UI resta invariata
+- il dettaglio tecnico resta nelle loggate, come scelta esplicita della POC
+- il modello e' ancora mock, quindi il vincolo business e' affidabile sui campi strutturati, mentre la similarita' semantica resta simulata
+
+#### 21. Checklist query demo
+
+E' stata creata una checklist tecnica dedicata per validare la POC prima e dopo modifiche a ranking, dataset, logica "simili a X" e futuro modello embedding.
+
+File creato:
+
+```text
+SEMANTIC_SEARCH_QUERY_CHECKLIST.md
+```
+
+Contiene:
+
+- query core per rischio, cedola, sostenibilita', valuta e asset class
+- query negative e composte
+- query specifiche per `simili a X`
+- query da usare soprattutto dopo `transformers.js`
+- campi console da annotare
+- criteri di regressione
+
+Scopo:
+
+- avere una base stabile di test manuali
+- confrontare il comportamento prima/dopo `transformers.js`
+- evitare valutazioni solo qualitative
+- capire subito se una modifica rompe ranking business o risoluzione sorgente
+
+#### 22. Baseline score mock
+
+E' stata eseguita la checklist con l'embedding mock attuale ed e' stata salvata una baseline completa degli score prima di introdurre `transformers.js`.
+
+File creato:
+
+```text
+SEMANTIC_SEARCH_MOCK_BASELINE.md
+```
+
+Contiene, per 23 query:
+
+- query eseguita
+- obiettivo della query
+- numero risultati
+- top 3 prodotti
+- `semanticScore`
+- `businessBoost`
+- `finalScore`
+- `matchedRules`
+- per query `simili a X`: sorgente scelta, candidati sorgente, vincolo e flag ambiguita'
+
+Nota tecnica emersa durante la baseline:
+
+- la divisione sorgente/vincolo in `simili a X` non deve usare i token arricchiti con sinonimi
+- e' stata corretta la duplicazione del vincolo, per esempio `con cedola cedola`
+- file corretto: `src/semantic-search/similarProducts.ts`
+
+#### 23. Open point query understanding / query rewrite
+
+E' stato aggiunto un task architetturale prima o insieme all'integrazione del modello vero:
+
+```text
+Usare un modello anche per interpretare il testo utente e trasformarlo in una query strutturata/normalizzata prima dell'embedding.
+```
+
+Pipeline desiderata:
+
+```text
+input utente
+-> query understanding / query rewrite
+-> intenti e vincoli strutturati
+-> query semantica normalizzata
+-> embedding
+-> retrieval vettoriale
+-> ranking business
+```
+
+Esempio:
+
+```text
+fondo con rendimento alto ma rischio basso
+```
+
+Output desiderato:
+
+```json
+{
+  "intent": "search_products",
+  "semanticQuery": "fondo con alto rendimento e basso rischio",
+  "constraints": {
+    "riskKiid": "low",
+    "performance": "high"
+  },
+  "unsupportedConstraints": []
+}
+```
+
+Se mancano dati performance, la stessa query dovrebbe poter produrre:
+
+```json
+{
+  "intent": "search_products",
+  "constraints": {
+    "riskKiid": "low"
+  },
+  "unsupportedConstraints": ["performance"]
+}
+```
+
+Scopo:
+
+- capire meglio sinonimi e frasi naturali
+- trasformare richieste vaghe in vincoli business espliciti
+- loggare cosa il sistema ha capito
+- distinguere cio' che si puo' cercare da cio' che manca nei dati
+- evitare che tutta la responsabilita' cada sull'embedding
+
+Task tecnico collegato:
+
+- creare un modulo tipo `queryUnderstanding.ts`
+- definire un tipo `ParsedSemanticQuery`
+- estrarre intenti come `search_products`, `similar_products`, `compare_products`
+- estrarre vincoli come rischio, cedola, sostenibilita', valuta, performance
+- distinguere vincoli supportati e non supportati
+- usare l'output sia per embedding sia per ranking business
+- aggiungere log dedicati nella console POC
+
+#### 24. Open point prodotti aggiuntivi / prodotti tematici
+
+E' stata segnalata una lista di prodotti aggiuntivi rispetto al catalogo attuale, con altre tipologie di prodotti e prodotti associati ad aziende/temi, per esempio aziende automobilistiche come Tesla.
+
+Obiettivo funzionale:
+
+```text
+Permettere al consulente di fare ricerche tematiche, per esempio prodotti collegati a Tesla, automotive, tecnologia, energia, ecc.
+```
+
+Questo richiede di arricchire il dataset semantico con informazioni che oggi non sono presenti nei 509 fondi locali.
+
+Campi potenzialmente utili:
+
+- `issuer`
+- `companyName`
+- `ticker`
+- `sector`
+- `theme`
+- `industry`
+- `underlyings`
+- `exposure`
+- `country`
+- `productCategory`
+- `description`
+- eventuali metriche performance/rischio
+
+Nota:
+
+- questi prodotti potrebbero non essere fondi classici
+- il tipo `SemanticProductSource` dovra' diventare piu' generale o essere esteso
+- il testo semantico dovra' includere temi, sottostanti, emittente e settore
+- la checklist andra' estesa con query tipo `prodotti collegati a Tesla`, `automotive`, `societa' tech`, ecc.
+
+#### 25. Open point piccolo server API prodotti
+
+Per usare i prodotti aggiuntivi nella POC serve un piccolo server che esponga un'API locale.
+
+Obiettivo:
+
+```text
+Esporre via API i prodotti aggiuntivi e permettere al frontend di integrarli nell'indice semantico.
+```
+
+Endpoint minimi consigliati:
+
+```text
+GET /api/products
+GET /api/products/:id
+GET /api/products/search?q=...
+```
+
+Possibile struttura dati:
+
+```text
+server/
+  products.json
+  index.js
+```
+
+Oppure:
+
+```text
+src/server/
+  products-extra.json
+  productApi.ts
+```
+
+Scelte tecniche da valutare:
+
+- usare Express o server Node minimale
+- tenere il server separato dal frontend Vite
+- aggiungere script `npm run api`
+- aggiungere eventualmente script `npm run dev:all`
+- normalizzare i prodotti API nello stesso formato semantico usato dal frontend
+
+Task tecnico collegato:
+
+- definire formato JSON dei prodotti aggiuntivi
+- creare server locale read-only
+- aggiungere endpoint lista/dettaglio/search
+- aggiornare frontend per caricare anche prodotti API
+- fondere prodotti locali + prodotti API nell'indice semantico
+- aggiornare baseline e checklist
+
+#### 26. Creato backend locale Node/Express/SQLite
+
+E' stato creato un primo backend locale per la POC.
+
+File/cartelle principali:
+
+```text
+server/index.js
+server/README.md
+server/data/products-base.json
+server/data/products-extra.json
+server/data/semantic-search.db
+```
+
+Script aggiunti:
+
+```text
+npm run api
+npm run dev:all
+```
+
+Stack:
+
+- Node.js
+- Express
+- SQLite tramite `node:sqlite`
+
+Nota:
+
+- `node:sqlite` e' sperimentale in Node 22, ma evita di installare un pacchetto SQLite nativo per la POC
+- Express e' stato aggiunto alle dipendenze del progetto
+
+Dati caricati:
+
+```text
+509 prodotti base
+1000 prodotti aggiuntivi
+1509 prodotti totali dopo deduplica per ISIN
+```
+
+Endpoint principali:
+
+```text
+GET /health
+GET /api/products
+GET /api/products/:id
+GET /api/products/search?q=...
+POST /products?page=0&size=20
+```
+
+Endpoint compatibile catalogo:
+
+```text
+POST /products
+```
+
+Restituisce una response paginata con:
+
+```text
+content
+number
+numberOfElements
+totalElements
+totalPages
+last
+```
+
+Verifiche eseguite:
+
+```text
+GET /health -> 1509 prodotti
+GET /api/products?q=TESLA -> restituisce TESLA INC
+POST /products?page=0&size=3 -> restituisce response paginata
+POST /products?page=0&size=3&types=FUND -> restituisce fondi paginati
+```
+
+Prossimo passo collegato:
+
+- collegare il frontend al serverino
+- decidere se usare il serverino solo per semantic search o anche per la tabella catalogo classica
+- aggiornare la costruzione dell'indice semantico per usare `GET /api/products`
+
+#### 27. Collegamento FE al bootstrap del server POC
+
+Il frontend ora chiama il server POC quando si entra nella pagina catalogo prodotti.
+
+File modificati:
+
+```text
+src/components/widget/WidgetProductList/WidgetProductList.tsx
+server/index.js
+server/README.md
+```
+
+Comportamento:
+
+```text
+mount pagina catalogo
+-> GET http://127.0.0.1:3001/health
+-> salva `products` in uno stato locale semplice
+-> usa quei prodotti per costruire l'indice semantico
+```
+
+Fallback:
+
+- se il server POC non e' disponibile, il frontend continua a usare `src/products.json`
+- quindi la POC resta utilizzabile anche senza backend avviato
+
+Decisione endpoint:
+
+- `/health` restituisce stato, conteggi e lista prodotti completa
+- `/api/products` non supporta piu' il filtro `q`
+- la ricerca testuale API resta separata su `/api/products/search?q=...`
+
+Nota:
+
+- per ora la tabella catalogo classica continua a usare il flusso `fetchProducts`
+- il collegamento al serverino e' usato per la semantic search/bootstrap dati POC
+- resta da decidere se sostituire anche il catalogo classico con `POST /products` del serverino
+
 ### Stato attuale importante
 
-La POC oggi funziona come flusso end-to-end e la ricerca semantica nella UI indicizza il dataset locale:
+La POC oggi funziona come flusso end-to-end e la ricerca semantica nella UI indicizza ancora il dataset locale:
 
 In pratica:
 
@@ -1429,6 +1999,14 @@ prodotti caricati dalla tabella/API -> tabella standard
 
 Questa separazione e' intenzionale per la POC: la ricerca classica resta invariata, mentre la semantica lavora su un dataset locale piu' ampio e stabile.
 
+In parallelo e' ora disponibile un backend locale:
+
+```text
+server/data/products-base.json + server/data/products-extra.json -> SQLite -> API locale
+```
+
+Il frontend ora chiama `/health` del backend locale per popolare il dataset semantico, con fallback sul JSON locale.
+
 ### Limiti attuali
 
 #### 1. Embedding ancora mock
@@ -1443,15 +2021,13 @@ Conseguenza:
 
 #### 2. Modalita' "simili a prodotto" da rifinire
 
-La modalita' "simili a X" e' implementata, ma resta da rifinire.
+La modalita' "simili a X" e' implementata e supporta anche vincoli business aggiuntivi.
 
 Miglioramenti possibili:
 
-- mostrare nei log il punteggio usato per scegliere il prodotto sorgente
 - gestire disambiguazione se piu' prodotti matchano lo stesso nome
-- consentire query per ISIN esplicito
+- mostrare in UI un messaggio dedicato se il prodotto sorgente non viene trovato
 - aggiungere un titolo UI tipo `Prodotti simili a ...`
-- combinare similarita' prodotto con vincoli business aggiuntivi, per esempio `simili a investiper ma meno rischiosi`
 
 #### 3. Embedding ancora mock
 
@@ -1462,6 +2038,38 @@ Conseguenza:
 - funziona bene con query esplicite e regole business
 - funziona peggio con frasi naturali molto ambigue
 - non capisce davvero il significato come farebbe un modello embedding
+
+#### 4. Query understanding non ancora implementato
+
+Oggi la query utente viene usata quasi direttamente:
+
+```text
+testo utente -> embedding/ranking
+```
+
+Manca ancora uno step esplicito:
+
+```text
+testo utente -> intenti/vincoli normalizzati -> embedding/ranking
+```
+
+Questo sara' utile soprattutto per query naturali complesse e per capire quando l'utente chiede dati non disponibili.
+
+#### 5. Dataset ancora limitato ai prodotti locali
+
+Il dataset semantico usato dalla UI attuale e' ancora `src/products.json`.
+
+Il backend locale contiene gia':
+
+- 509 prodotti base
+- 1000 prodotti aggiuntivi
+- SQLite locale
+- API locale
+
+Manca:
+
+- decidere se collegare anche la tabella catalogo classica al backend locale
+- arricchire i prodotti aggiuntivi con campi tema/settore/sottostanti se servono query tematiche robuste
 
 ### Prossimi task consigliati
 
@@ -1493,11 +2101,10 @@ Obiettivo:
 
 Micro-task consigliati:
 
-1. loggare candidati sorgente e punteggio di match
-2. gestire casi con piu' prodotti sorgente simili
-3. supportare query per ISIN, per esempio `simili a IT0001079398`
-4. valutare vincoli aggiuntivi, per esempio `simili a investiper ma meno rischiosi`
-5. valutare un titolo UI dedicato, senza sporcare troppo il catalogo reale
+1. decidere se la disambiguazione resta solo in console o se serve una micro-UI
+2. mostrare in UI un messaggio dedicato quando il prodotto sorgente non viene trovato
+3. valutare un titolo UI dedicato, senza sporcare troppo il catalogo reale
+4. aggiungere query demo specifiche per `simili a X ma ...`
 
 #### Task 3 - Sostituire il mock con `transformers.js`
 
@@ -1528,7 +2135,54 @@ Aspetti da gestire:
 
 Nota: il modello vero migliora il significato, ma non sostituisce il ranking business.
 
-#### Task 4 - Cache embedding prodotti
+#### Task 4 - Query understanding / query rewrite
+
+Obiettivo:
+
+- interpretare il testo utente prima dell'embedding
+- produrre una query normalizzata e vincoli strutturati
+- loggare cosa il sistema ha capito
+
+Output atteso:
+
+```ts
+interface ParsedSemanticQuery {
+  originalQuery: string;
+  semanticQuery: string;
+  intent: "search_products" | "similar_products" | "compare_products";
+  constraints: Record<string, unknown>;
+  unsupportedConstraints: string[];
+}
+```
+
+Esempi:
+
+- `prudente` -> `riskKiid basso`
+- `rendimento alto` -> `performance high`
+- `simile a AT0000712716` -> intent `similar_products`
+- `Tesla` -> tema/azienda/sottostante se presente nel dataset esteso
+
+#### Task 5 - Server API prodotti aggiuntivi creato
+
+Obiettivo:
+
+- esporre la nuova lista prodotti passata dall'esterno
+- includere prodotti diversi dai fondi attuali
+- supportare ricerche tematiche su aziende/settori, per esempio automotive/Tesla
+
+Micro-task consigliati:
+
+1. completato: definire schema minimo dei prodotti aggiuntivi
+2. completato: creare piccolo server locale read-only
+3. completato: esporre `GET /api/products`
+4. completato: esporre `GET /api/products/:id`
+5. completato: esporre `GET /api/products/search?q=...`
+6. completato: normalizzare prodotti base/extra in forma compatibile
+7. completato: collegare frontend al bootstrap `/health`
+8. completato: usare prodotti API nell'indice semantico, con fallback locale
+9. da fare: decidere se collegare anche tabella catalogo classica al serverino
+
+#### Task 6 - Cache embedding prodotti
 
 Obiettivo:
 
@@ -1541,7 +2195,7 @@ Opzioni:
 - `IndexedDB` se gli embedding diventano pesanti
 - JSON precomputato in una fase successiva
 
-#### Task 5 - Preparare checklist query demo
+#### Task 7 - Checklist query demo completata
 
 Query minime da usare per validazione:
 
@@ -1553,6 +2207,8 @@ fondi obbligazionari corporate
 fondi dinamici con rischio alto
 prodotti eco sostenibili con pai
 fondi simili a investiper
+fondo simile a AT0000712716 ma meno rischiosi
+fondo simile a AT0000712716 con cedola
 ```
 
 Per ogni query va verificato:
@@ -1562,21 +2218,461 @@ Per ogni query va verificato:
 - i log spiegano perche' un prodotto e' salito?
 - ci sono risultati sorprendenti da correggere?
 
+Checklist completa:
+
+```text
+SEMANTIC_SEARCH_QUERY_CHECKLIST.md
+```
+
+Baseline score mock:
+
+```text
+SEMANTIC_SEARCH_MOCK_BASELINE.md
+```
+
+### Open point dati performance dinamici
+
+Le performance/rendimenti sono state rivalutate come dati dinamici, quindi non conviene renderle un prerequisito della prima POC.
+
+```text
+Performance, rendimento, NAV, prezzo e metriche giornaliere cambiano frequentemente.
+```
+
+Decisione:
+
+- non basare la POC principale su performance/rendimento giornaliero
+- non bloccare `transformers.js` o il server API su questi dati
+- per query tipo `rendimento alto`, loggare/gestire il vincolo come non supportato o opzionale
+- concentrarsi prima su dati piu' stabili: prodotto, emittente, settore, tema, sottostanti, asset class, rischio, valuta, cedola, sostenibilita'
+
+Dati dinamici eventualmente gestibili in una fase successiva:
+
+- `performanceYtd`
+- `performance1Y`
+- `performance3Y`
+- `performance5Y`
+- `yield`
+- `volatility`
+- `sharpeRatio`
+- `maxDrawdown`
+- `ter`
+- eventuale cedola percentuale
+
+Se verranno aggiunti piu' avanti:
+
+- salvarli con `asOfDate` / data aggiornamento
+- tenerli opzionali rispetto al ranking principale
+- evitare di usarli per demo se non aggiornati o affidabili
+- aggiornare `SemanticProductSource`
+- aggiornare `buildProductSemanticText`
+- aggiornare `businessRanking` per intenti come `rendimento alto`, `performance alta`, `buon rapporto rischio rendimento`
+- rigenerare baseline score
+
 ### Ordine consigliato da qui
 
 Ordine pragmatico:
 
-1. mostrare o rendere piu' leggibili score e motivazioni in modalita' POC
-2. rifinire "simili a X"
-3. preparare checklist query demo completa
-4. integrare `transformers.js`
-5. aggiungere cache embedding
+1. decidere se sostituire anche la tabella catalogo classica o solo la semantic search
+2. aggiornare testo semantico con campi stabili: tema, settore, azienda, sottostanti, emittente
+3. introdurre query understanding / query rewrite
+4. aggiornare checklist e baseline con query tematiche tipo Tesla/automotive
+5. integrare `transformers.js`
+6. rieseguire la checklist e confrontarla con `SEMANTIC_SEARCH_MOCK_BASELINE.md`
+7. aggiungere cache embedding
 
 Motivo:
 
 - ora il dataset locale e' collegato e abbastanza ampio per testare query realistiche
 - il reranking business copre casi positivi, negativi e composti
 - la modalita' prodotti simili e' presente, ma puo' essere resa piu' spiegabile
-- solo dopo conviene introdurre il modello vero
+- performance/rendimento sono dati dinamici e non sono centrali nella prima POC
+- per query tematiche tipo Tesla servono prodotti aggiuntivi e campi tema/sottostante
+- il query understanding aiuta a trasformare frasi naturali in vincoli e intenti espliciti
 
-Altrimenti il modello rischia di migliorare la semantica generale, ma lasciare poco chiaro perche' un prodotto salga o scenda nel ranking.
+Altrimenti il modello rischia di capire meglio la richiesta, ma non avere comunque informazioni sufficienti per rispondere correttamente.
+
+---
+
+## Aggiornamento operativo - 2026-06-22
+
+### Task svolto - Inserito modello embedding reale
+
+Il mock embedding e' stato sostituito con una pipeline reale basata su:
+
+```text
+@huggingface/transformers
+```
+
+Pacchetto installato:
+
+```text
+@huggingface/transformers
+```
+
+File modificati:
+
+```text
+src/semantic-search/embeddingService.ts
+src/semantic-search/semanticSearch.ts
+package.json
+package-lock.json
+```
+
+Modello configurato:
+
+```text
+Xenova/paraphrase-multilingual-MiniLM-L12-v2
+```
+
+Motivo della scelta:
+
+- supporta `feature-extraction` in Transformers.js
+- e' multilingua, utile per query italiane e dati prodotto misti
+- e' piu' adatto della variante solo inglese per questa POC
+
+Pipeline attuale:
+
+```text
+testo prodotto/query
+-> pipeline("feature-extraction")
+-> pooling mean
+-> normalize true
+-> vettore reale
+-> cosine similarity
+-> ranking business
+```
+
+La funzione pubblica e' rimasta invariata:
+
+```ts
+embedText(text): Promise<number[]>
+```
+
+Quindi il resto della pipeline continua a usare la stessa interfaccia.
+
+### Fallback mantenuto
+
+Dentro `embeddingService.ts` e' stato mantenuto un fallback mock.
+
+Serve solo come protezione:
+
+- se il modello non viene scaricato
+- se la rete non e' disponibile
+- se Transformers.js fallisce in runtime
+
+In quel caso la console logga esplicitamente:
+
+```text
+Fallback embedding mock
+```
+
+e la POC non va in errore bloccante.
+
+### Cache embedding in memoria
+
+E' stata aggiunta una cache in memoria:
+
+```ts
+Map<string, Promise<SemanticEmbedding>>
+```
+
+Obiettivo:
+
+- evitare di rigenerare piu' volte lo stesso embedding nella stessa sessione browser
+- condividere la promise se lo stesso testo viene richiesto mentre il modello sta ancora lavorando
+
+Nota:
+
+- questa cache vive solo in memoria
+- al refresh pagina viene persa
+- resta ancora da fare una cache persistente o un precompute degli embedding
+
+### Indicizzazione resa progressiva
+
+Prima l'indice prodotti veniva costruito con:
+
+```ts
+Promise.all(...)
+```
+
+Questo era comodo con il mock, ma rischioso con un modello reale perche' poteva lanciare centinaia o migliaia di inferenze insieme.
+
+Ora `buildSemanticIndex(products)` lavora in modo progressivo:
+
+```text
+prodotto 1 -> embedding
+prodotto 2 -> embedding
+...
+```
+
+e logga avanzamento ogni 25 prodotti:
+
+```text
+Avanzamento indice prodotti
+```
+
+Questo rende il primo caricamento piu' controllabile, anche se potenzialmente piu' lento.
+
+### Impatto atteso
+
+Al primo accesso alla pagina catalogo:
+
+- il browser deve caricare Transformers.js
+- il browser deve scaricare il modello da Hugging Face
+- il browser deve generare gli embedding dei prodotti del dataset semantico
+
+Quindi il primo giro puo' essere lento.
+
+Dopo il primo caricamento:
+
+- il modello resta caricato in memoria
+- gli embedding gia' generati vengono riusati dalla cache in memoria
+- le query successive dovrebbero essere piu' rapide
+
+### Stato attuale dopo questo task
+
+La POC non usa piu' solo l'embedding mock come motore principale.
+
+Stato reale:
+
+```text
+embedding principale: Transformers.js
+fallback: mock deterministico
+cache: in memoria
+precompute persistente: non ancora presente
+query understanding: non ancora presente
+```
+
+### Prossimi task consigliati aggiornati
+
+#### Task 1 - Validare runtime con modello reale
+
+Obiettivo:
+
+- aprire la pagina catalogo
+- aspettare caricamento modello e indice
+- eseguire la checklist query
+- confrontare i risultati con `SEMANTIC_SEARCH_MOCK_BASELINE.md`
+
+Da osservare:
+
+- tempo primo caricamento
+- eventuali errori download modello
+- dimensione vettore reale
+- score semantici rispetto alla baseline mock
+- qualita' top 3/top 10 per query core
+
+#### Task 2 - Cache persistente / precompute embedding
+
+Obiettivo:
+
+- evitare di rigenerare gli embedding di tutti i prodotti a ogni refresh
+
+Opzioni:
+
+- `localStorage` solo se la dimensione resta gestibile
+- `IndexedDB` per MVP browser piu' robusto
+- precompute lato Node e salvataggio su SQLite/JSON
+
+Per la POC con backend locale, l'opzione piu' pulita sara':
+
+```text
+server Node -> genera/salva embedding -> FE carica prodotti + embedding
+```
+
+#### Task 3 - Query understanding / query rewrite
+
+Obiettivo:
+
+- trasformare l'input utente in una query normalizzata e vincoli strutturati prima dell'embedding
+
+Esempio:
+
+```text
+fondo con rendimento alto ma rischio basso
+```
+
+deve diventare qualcosa tipo:
+
+```json
+{
+  "semanticQuery": "fondo con rischio basso",
+  "constraints": {
+    "riskKiid": "low"
+  },
+  "unsupportedConstraints": ["performance"]
+}
+```
+
+Questo task richiedera' un modello diverso dal modello embedding, perche' serve interpretare/riscrivere testo, non produrre vettori.
+
+#### Task 4 - Arricchire testo semantico con campi tema/settore/sottostanti
+
+Obiettivo:
+
+- migliorare query tipo `prodotti automotive`, `Tesla`, `case farmaceutiche`
+- usare in modo piu' solido i prodotti aggiuntivi del server POC
+
+Campi utili:
+
+- tema
+- settore
+- azienda
+- emittente
+- sottostanti
+- descrizione
+
+#### Task 5 - Rifinire UI/log dei prodotti simili
+
+Obiettivo:
+
+- mostrare meglio quando il prodotto sorgente non viene trovato
+- rendere chiaro quale sorgente e' stata scelta
+- lasciare in console candidati, ambiguita', score e vincoli
+
+#### Task 6 - Definire similarita' per caratteristiche disponibili
+
+Obiettivo:
+
+- rendere la modalita' `prodotti simili a X` piu' coerente con i dati realmente disponibili
+- evitare che sugli equity/prodotti extra la similarita' sembri casuale
+- non dare per disponibili campi che oggi non abbiamo, come settore, industria, tema, descrizione o sottostanti
+
+Problema osservato:
+
+```text
+prodotti simili a FR0014011QJ8
+```
+
+Il prodotto sorgente viene risolto correttamente tramite ISIN esatto ed escluso dai risultati, ma i prodotti restituiti possono sembrare poco simili dal punto di vista business.
+
+Motivo:
+
+- per i fondi base abbiamo campi finanziari abbastanza confrontabili: `riskKiid`, `currency`, `sustainable`, `ecoSustainable`, `pai`, `coupon`, `productType`, asset class, societa'/sicav
+- per gli equity/prodotti extra abbiamo spesso campi piu' generici: `productType`, `caaFirstLevelType`, `riskKiid`, `currency`, `sustainable`, `ecoSustainable`, `pai`, `bicType`
+- senza settore/industria/tema/descrizione, due equity possono risultare simili solo per rischio, valuta e flag ESG, anche se appartengono a business diversi
+
+Decisione POC:
+
+La similarita' deve essere esplicita e basata sui campi disponibili.
+
+Prima versione consigliata:
+
+```text
+similarita' = embeddingScore
+            + stesso productType
+            + stesso caaFirstLevelType / asset class
+            + rischio KIID vicino
+            + stessa valuta
+            + stessi flag sostenibilita'/eco/PAI/BIC/cedola
+```
+
+Per gli equity/prodotti extra:
+
+- dare molto peso a `productType === EQUITY`
+- dare peso a rischio vicino
+- dare peso a `currency`
+- dare peso a `sustainable`, `ecoSustainable`, `pai`, `bicType`
+- evitare di fingere similarita' settoriale se il settore non e' presente
+
+Output atteso nei log:
+
+```text
+similarityScore
+characteristicsBoost
+finalScore
+matchedCharacteristics
+sourceProduct
+```
+
+Task tecnici:
+
+1. creare una funzione dedicata tipo `calculateCharacteristicsSimilarity(sourceProduct, candidateProduct)`
+2. usare questa funzione dentro `findSimilarProducts`
+3. separare nei log `embeddingScore`, `characteristicsBoost` e `finalScore`
+4. aggiungere alla checklist casi `simili a ISIN` sia su fondi sia su equity
+5. valutare solo dopo se arricchire il dataset con campi `sector`, `theme`, `industry`, `description`, `underlyings`
+
+### Task svolto - Cache embedding prodotti su SQLite
+
+Gli embedding dei prodotti vengono ora salvati nel DB SQLite del server POC.
+
+File principali:
+
+```text
+server/semanticEmbeddings.js
+server/index.js
+src/semantic-search/semanticTypes.ts
+src/semantic-search/semanticSearch.ts
+src/components/widget/WidgetProductList/WidgetProductList.tsx
+```
+
+Tabella usata:
+
+```text
+product_embeddings
+```
+
+Chiave logica di riuso:
+
+```text
+isin
+model_name
+model_version
+semantic_text_hash
+```
+
+Questo significa:
+
+- se il prodotto e' gia' stato embeddato con lo stesso modello
+- e il testo semantico prodotto non e' cambiato
+- allora l'embedding viene letto da SQLite
+- se cambia modello, versione, quantizzazione, pooling o testo semantico, l'embedding viene rigenerato
+
+Versione modello corrente:
+
+```text
+model_name: Xenova/paraphrase-multilingual-MiniLM-L12-v2
+model_version: task:feature-extraction|dtype:q4|pooling:mean|normalize:true|semanticText:v1
+```
+
+Comportamento server:
+
+```text
+avvio server
+-> legge prodotti
+-> controlla embedding in product_embeddings
+-> genera solo quelli mancanti
+-> salva embedding_json
+-> /health restituisce prodotti + semanticEmbedding
+```
+
+Comportamento frontend:
+
+```text
+/health
+-> prodotti con semanticEmbedding
+-> buildSemanticIndex usa embedding precomputato
+-> non rigenera embedding prodotto nel browser se gia' presente
+```
+
+Nota:
+
+- la query utente viene ancora embedddata lato browser
+- quindi il browser carica ancora il modello per la query
+- pero' non deve piu' rigenerare i 1509 embedding prodotto a ogni refresh
+
+Verifica eseguita:
+
+```text
+product_embeddings: 1509 righe
+secondo avvio server: cached 1509, generated 0, failed 0
+/health aggiornato: productsWithEmbedding 1509
+dimensione embedding: 384
+```
+
+Nota operativa:
+
+- durante il test esisteva gia' un server vecchio sulla porta `3001`
+- il codice aggiornato e' stato verificato su `PORT=3002`
+- per usare il nuovo comportamento in UI bisogna fermare il vecchio server su `3001` e riavviare `npm run api`

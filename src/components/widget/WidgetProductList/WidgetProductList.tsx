@@ -37,6 +37,8 @@ import { semanticDebugLog } from "../../../semantic-search/debug";
 import localSemanticProducts from "../../../products.json";
 import "./WidgetProductList.scss";
 
+const POC_API_HEALTH_URL = "http://127.0.0.1:3001/health";
+
 interface IProps {
   className?: string;
   selectedView?: string;
@@ -85,9 +87,11 @@ const WidgetProductsList: FC<IProps> = ({
   );
   const [errorAdvancedSearch, setErrorAdvancedSearch] = useState(false);
   const [pastMonthLastDay, setPastMonthLastDay] = useState("");
+  const [pocApiProducts, setPocApiProducts] = useState<any[]>([]);
   const semanticDatasetProducts = useMemo(
-    () => localSemanticProducts as any[],
-    []
+    () =>
+      pocApiProducts.length > 0 ? pocApiProducts : (localSemanticProducts as any[]),
+    [pocApiProducts]
   );
   const {
     semanticQuery,
@@ -129,6 +133,43 @@ const WidgetProductsList: FC<IProps> = ({
       );
     setIsLoadingOptions(true);
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch(POC_API_HEALTH_URL)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`POC API health failed: ${response.status}`);
+        }
+
+        return response.json();
+      })
+      .then(data => {
+        if (!isMounted) return;
+        const apiProducts = Array.isArray(data?.products) ? data.products : [];
+        setPocApiProducts(apiProducts);
+        semanticDebugLog("Prodotti caricati dal server POC", {
+          count: apiProducts.length,
+          status: data?.status,
+          baseCount: data?.baseCount,
+          extraCount: data?.extraCount,
+          storedCount: data?.storedCount,
+          embeddingStats: data?.embeddingStats
+        });
+      })
+      .catch(error => {
+        semanticDebugLog("Server POC non disponibile, uso dataset locale", {
+          url: POC_API_HEALTH_URL,
+          error: error instanceof Error ? error.message : error,
+          fallbackCount: (localSemanticProducts as any[]).length
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     try {

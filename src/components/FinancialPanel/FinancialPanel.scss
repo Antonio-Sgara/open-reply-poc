@@ -1,0 +1,20 @@
+@import "../../styles/variables";
+
+.financialPanel__title {
+  color: rgb(38, 77, 122);
+  font-weight: bold;
+  margin: 20px 0;
+}
+
+.financialPanel__content {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.financialPanel__bigTitle {
+  font-size: 1.75rem;
+}

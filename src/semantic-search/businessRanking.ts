@@ -135,6 +135,124 @@ const addBooleanPreference = (
   );
 };
 
+const automotiveBrands = [
+  "tesla",
+  "volkswagen",
+  "mercedes",
+  "bmw",
+  "stellantis",
+  "ferrari",
+  "toyota",
+  "ford",
+  "general motors",
+  "honda",
+  "hyundai",
+  "renault",
+  "porsche",
+  "nissan",
+  "kia",
+  "mazda",
+  "subaru",
+  "rivian",
+  "lucid"
+];
+
+const pharmaBrands = [
+  "johnson johnson",
+  "merck",
+  "pfizer",
+  "novartis",
+  "novo nordisk",
+  "astrazeneca",
+  "bayer",
+  "roche",
+  "sanofi",
+  "gsk",
+  "glaxosmithkline",
+  "bristol myers",
+  "abbvie",
+  "amgen",
+  "gilead",
+  "eli lilly",
+  "lilly",
+  "moderna",
+  "biogen",
+  "regeneron",
+  "teva",
+  "takeda",
+  "sandoz",
+  "biogena"
+];
+
+const findBrandInText = (text: string, brands: string[]) => {
+  return brands.find(brand => {
+    const normalizedBrand = normalizeText(brand);
+    return new RegExp(`(^| )${normalizedBrand}( |$)`).test(text);
+  });
+};
+
+const getAutomotiveBoost = (
+  product: SemanticProductSource,
+  normalizedQuery: string,
+  matchedRules: string[]
+) => {
+  const asksAutomotive = hasAny(normalizedQuery, [
+    "automobili",
+    "automobile",
+    "auto",
+    "automotive",
+    "veicoli",
+    "macchine",
+    "motori",
+    "case automobilistiche",
+    "azienda automobilistica",
+    "aziende automobilistiche"
+  ]);
+
+  if (!asksAutomotive) return 0;
+
+  const normalizedName = normalizeText(product.name ?? product.productName ?? "");
+  const matchedBrand = findBrandInText(normalizedName, automotiveBrands);
+
+  if (!matchedBrand) return 0;
+
+  matchedRules.push(`automotive brand ${matchedBrand}`);
+  return 0.55;
+};
+
+const getPharmaBoost = (
+  product: SemanticProductSource,
+  normalizedQuery: string,
+  matchedRules: string[]
+) => {
+  const asksPharma = hasAny(normalizedQuery, [
+    "farmaceutico",
+    "farmaceutici",
+    "farmaceutica",
+    "farmaceutiche",
+    "case farmaceutiche",
+    "azienda farmaceutica",
+    "aziende farmaceutiche",
+    "pharma",
+    "farmaci",
+    "biotecnologia",
+    "biotech",
+    "sanitario",
+    "salute",
+    "healthcare"
+  ]);
+
+  if (!asksPharma) return 0;
+
+  const normalizedName = normalizeText(product.name ?? product.productName ?? "");
+  const matchedBrand = findBrandInText(normalizedName, pharmaBrands);
+
+  if (!matchedBrand) return 0;
+
+  matchedRules.push(`pharma brand ${matchedBrand}`);
+  return 0.55;
+};
+
 export const calculateBusinessRanking = (
   query: string,
   product: SemanticProductSource
@@ -144,6 +262,8 @@ export const calculateBusinessRanking = (
   let businessBoost = 0;
 
   businessBoost += getRiskKiidBoost(product, normalizedQuery, matchedRules);
+  businessBoost += getAutomotiveBoost(product, normalizedQuery, matchedRules);
+  businessBoost += getPharmaBoost(product, normalizedQuery, matchedRules);
 
   const asksNotSustainable =
     hasNegativeIntent(normalizedQuery, ["sostenibile", "sostenibili"]) ||

@@ -1,0 +1,68 @@
+@import "../../styles/variables";
+@import "../../styles/mixin";
+
+.dropdown-toggle.btn.btn-secondary.filterToggleDropdown__toggle {
+  background-color: #264d7a;
+  border-radius: 5px;
+  color: $color-white;
+  font-size: 14px;
+  font-weight: 400;
+  height: 30px;
+  outline: none;
+  padding: 0 13px;
+  text-transform: uppercase;
+  transition: none;
+  width: auto;
+
+  &.active,
+  &.open,
+  &:active,
+  &:hover,
+  &:focus {
+    background-color: #264d7a;
+    opacity: 0.9;
+  }
+
+  span {
+    vertical-align: middle;
+  }
+}
+
+.filterToggleButton__wrapper {
+  &.fullWidth .dropdown .dropdown-toggle {
+    text-align: left;
+    width: 110%;
+
+    &::after {
+      position: absolute;
+      right: -10px;
+      top: 13px;
+    }
+  }
+}
+
+button.filterToggleDropdown__item {
+  color: $color-grey-35;
+
+  &.active,
+  &.active:hover,
+  &:active {
+    background-color: $color-blu;
+    color: $color-white;
+  }
+
+  &:hover,
+  &:focus {
+    background-color: #e9edf2;
+    color: $color-grey-35;
+  }
+}
+
+.DropdownsGroup__filters {
+  display: flex;
+  flex-flow: row nowrap;
+
+  div:first-child {
+    margin-right: 5px;
+  }
+}

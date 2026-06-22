@@ -1,0 +1,85 @@
+@import "../../styles/variables";
+
+.financialAdviceRiskTable.financialAdviceAssetAllocationTable {
+  position: relative;
+}
+
+.financialAdviceRiskTable__th,
+.financialAdviceRiskTable__tr {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: 16px minmax(160px, 1.5fr) minmax(90px, 0.7fr) minmax(180px, 1fr);
+}
+
+.financialAdviceRiskTable__th {
+  color: rgba(38, 77, 122, 0.4);
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.financialAdviceRiskTable__td {
+  min-width: 0;
+}
+
+.financialAdviceAssetAllocationTable_bodyRow {
+  margin-bottom: 8px;
+}
+
+.financialAdviceAssetAllocationTableTd__content {
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  color: $color-grey-35;
+  display: flex;
+  font-size: 13px;
+  height: 58px;
+  overflow: hidden;
+  padding: 8px 12px;
+}
+
+.financialAdviceAssetAllocationTable_td.verticalBar {
+  .financialAdviceAssetAllocationTableTd__content {
+    border-bottom-left-radius: 10px;
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    border-right: none;
+    border-top-left-radius: 10px;
+    justify-content: center;
+    padding: 8px 0;
+  }
+}
+
+.financialAdviceAssetAllocationTable_td.chart {
+  .linearBarChart__header,
+  .linearBarChart__summary {
+    display: none;
+  }
+
+  .financialAdviceAssetAllocationTableTd__content,
+  .linearBarChart__graphLinear {
+    height: 58px;
+  }
+}
+
+.financialAdviceRiskTable__tr .financialAdviceAssetAllocationTable_td.chart {
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom-right-radius: 10px;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top-right-radius: 10px;
+  padding: 0 12px;
+}
+
+@media (max-width: 991px) {
+  .financialAdviceRiskTable__th,
+  .financialAdviceRiskTable__tr {
+    grid-template-columns: 12px minmax(120px, 1fr) minmax(72px, 0.5fr);
+  }
+
+  .financialAdviceAssetAllocationTable_td.chart {
+    display: none;
+  }
+}

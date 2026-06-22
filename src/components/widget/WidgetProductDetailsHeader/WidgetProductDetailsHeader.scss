@@ -1,0 +1,43 @@
+@import "../../../styles/variables";
+
+.subtitle {
+  color: #92a6bc;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.simpleTable__tableRow.withBorder {
+  box-shadow: none;
+
+  td {
+    border-bottom: 1px solid $color-grey-90;
+    border-top: 1px solid $color-grey-90;
+  }
+
+  td:first-child {
+    border-left: 1px solid $color-grey-90;
+  }
+
+  td:last-child {
+    border-right: 1px solid $color-grey-90;
+  }
+}
+
+.simpleTable__tableRow.greyedOut {
+  background-color: $color-grey-lightest;
+}
+
+.widgetLight__title {
+  color: rgba(38, 77, 122, 0.4);
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.centered {
+  text-align: center;
+}
+
+.colorBlue {
+  color: rgb(38, 77, 122);
+}

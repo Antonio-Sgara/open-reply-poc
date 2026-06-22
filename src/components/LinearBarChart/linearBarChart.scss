@@ -1,0 +1,104 @@
+@import "../../styles/variables";
+
+.linearBarChart {
+  & + & {
+    margin-top: 24px;
+  }
+}
+
+.linearBarChart__header {
+  align-items: center;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+}
+
+.linearBarChart__title {
+  color: rgba(38, 77, 122, 0.4);
+  font-size: 13px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.linearBarChart__value {
+  font-size: 13px;
+  margin-left: 10px;
+}
+
+.linearBarChart__legend {
+  display: flex;
+  flex-grow: 1;
+  justify-content: flex-end;
+  margin: 2px 5px 0;
+
+  & > div {
+    align-items: center;
+    display: flex;
+    flex-flow: row wrap;
+  }
+}
+
+.linearBarChart__graphElement {
+  align-items: center;
+  display: flex;
+  font-size: 12px;
+  font-weight: 300;
+  margin-bottom: 2px;
+  margin-right: 20px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.linearBarChart__pill {
+  background-color: grey;
+  border-radius: 4px;
+  height: 8px;
+  margin-right: 5px;
+  width: 14px;
+}
+
+.linearBarChart__graphLinear {
+  border-radius: 20px;
+  display: flex;
+  flex-direction: row;
+  height: 20px;
+  margin-top: 15px;
+  width: 100%;
+
+  &.with--shadow {
+    box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  }
+}
+
+.linearBarChart__graphLinearBlock {
+  height: 20px;
+  position: relative;
+
+  &:first-child {
+    border-bottom-left-radius: 20px;
+    border-top-left-radius: 20px;
+  }
+
+  &:last-child {
+    border-bottom-right-radius: 20px;
+    border-top-right-radius: 20px;
+  }
+
+  &.minWidthLinearBarchart {
+    min-width: 2%;
+  }
+}
+
+.linearBarChart__graphLinear__container {
+  align-items: center;
+  display: flex;
+}
+
+.linearBarChart__summary {
+  color: $color-grey-35;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 12px;
+  margin-top: 8px;
+}

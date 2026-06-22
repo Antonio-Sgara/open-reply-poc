@@ -5,8 +5,22 @@ import {
 
 export interface SimilarProductsIntent<TProduct = SemanticProductSource> {
   sourceQuery: string;
-  sourceProduct: SemanticProductIndexItem<TProduct>;
+  constraintQuery?: string;
+  sourceProduct?: SemanticProductIndexItem<TProduct>;
+  sourceCandidates: SimilarProductsSourceCandidate<TProduct>[];
+  ambiguousSource: boolean;
 }
+
+export interface SimilarProductsSourceCandidate<TProduct = SemanticProductSource> {
+  productId: string;
+  isin?: string;
+  name?: string;
+  score: number;
+  product: TProduct;
+}
+
+const AMBIGUOUS_SOURCE_SCORE_DISTANCE = 10;
+const ISIN_PATTERN = /^[a-z]{2}[a-z0-9]{10}$/i;
 
 const normalizeText = (text: string) =>
   text
@@ -33,6 +47,33 @@ export const extractSimilarProductsSourceQuery = (query: string) => {
   }
 
   return undefined;
+};
+
+const splitSourceAndConstraint = (sourceQuery: string) => {
+  const normalizedSourceQuery = normalizeText(sourceQuery);
+  const [sourceBeforeMa, ...constraintAfterMa] = normalizedSourceQuery.split(/\s+ma\s+/);
+
+  if (constraintAfterMa.length > 0) {
+    return {
+      sourceQuery: sourceBeforeMa.trim(),
+      constraintQuery: constraintAfterMa.join(" ma ").trim()
+    };
+  }
+
+  const [firstToken, ...restTokens] = normalizedSourceQuery
+    .split(/\s+/)
+    .filter(Boolean);
+  if (firstToken && ISIN_PATTERN.test(firstToken) && restTokens.length > 0) {
+    return {
+      sourceQuery: firstToken,
+      constraintQuery: restTokens.join(" ")
+    };
+  }
+
+  return {
+    sourceQuery: normalizedSourceQuery,
+    constraintQuery: undefined
+  };
 };
 
 const getProductSearchText = (product: SemanticProductSource) =>
@@ -85,21 +126,44 @@ export const resolveSimilarProductsIntent = <
   query: string,
   index: SemanticProductIndexItem<TProduct>[]
 ): SimilarProductsIntent<TProduct> | undefined => {
-  const sourceQuery = extractSimilarProductsSourceQuery(query);
-  if (!sourceQuery) return undefined;
+  const extractedSourceQuery = extractSimilarProductsSourceQuery(query);
+  if (!extractedSourceQuery) return undefined;
 
-  const [sourceProduct] = index
+  const { sourceQuery, constraintQuery } =
+    splitSourceAndConstraint(extractedSourceQuery);
+  const normalizedSourceQuery = normalizeText(sourceQuery);
+  const isIsinSourceQuery = ISIN_PATTERN.test(normalizedSourceQuery);
+
+  const sourceCandidates = index
     .map(indexItem => ({
       indexItem,
       score: scoreSourceProductMatch(sourceQuery, indexItem)
     }))
-    .filter(item => item.score > 0)
-    .sort((first, second) => second.score - first.score);
+    .filter(item => {
+      if (!isIsinSourceQuery) return item.score > 0;
+      return normalizeText(item.indexItem.product.isin ?? "") === normalizedSourceQuery;
+    })
+    .sort((first, second) => second.score - first.score)
+    .map(item => ({
+      productId: item.indexItem.productId,
+      isin: item.indexItem.product.isin,
+      name: item.indexItem.product.name ?? item.indexItem.product.productName,
+      score: item.score,
+      product: item.indexItem.product,
+      indexItem: item.indexItem
+    }));
 
-  if (!sourceProduct) return undefined;
+  const [sourceProduct] = sourceCandidates;
+  const ambiguousSource =
+    sourceCandidates.length > 1 &&
+    sourceCandidates[0].score - sourceCandidates[1].score <=
+      AMBIGUOUS_SOURCE_SCORE_DISTANCE;
 
   return {
     sourceQuery,
-    sourceProduct: sourceProduct.indexItem
+    constraintQuery,
+    sourceProduct: sourceProduct?.indexItem,
+    sourceCandidates,
+    ambiguousSource
   };
 };

@@ -19,6 +19,112 @@ const pushField = (parts: string[], label: string, value: unknown) => {
   if (hasValue(value)) parts.push(`${label}: ${value}.`);
 };
 
+const automotiveBrands = [
+  "tesla",
+  "volkswagen",
+  "mercedes",
+  "bmw",
+  "stellantis",
+  "ferrari",
+  "toyota",
+  "ford",
+  "general motors",
+  "honda",
+  "hyundai",
+  "renault",
+  "porsche",
+  "nissan",
+  "kia",
+  "mazda",
+  "subaru",
+  "rivian",
+  "lucid"
+];
+
+const pharmaBrands = [
+  "johnson johnson",
+  "merck",
+  "pfizer",
+  "novartis",
+  "novo nordisk",
+  "astrazeneca",
+  "bayer",
+  "roche",
+  "sanofi",
+  "gsk",
+  "glaxosmithkline",
+  "bristol myers",
+  "abbvie",
+  "amgen",
+  "gilead",
+  "eli lilly",
+  "lilly",
+  "moderna",
+  "biogen",
+  "regeneron",
+  "teva",
+  "takeda",
+  "sandoz",
+  "biogena"
+];
+
+const normalizeText = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const findBrandInText = (text: string, brands: string[]) => {
+  return brands.find(brand => {
+    const normalizedBrand = normalizeText(brand);
+    return new RegExp(`(^| )${normalizedBrand}( |$)`).test(text);
+  });
+};
+
+const getThemeText = (productName?: string) => {
+  const normalizedName = normalizeText(productName ?? "");
+  const matchedAutomotiveBrand = findBrandInText(
+    normalizedName,
+    automotiveBrands
+  );
+  const matchedPharmaBrand = findBrandInText(normalizedName, pharmaBrands);
+
+  if (matchedAutomotiveBrand) {
+    return [
+      "automobili",
+      "auto",
+      "automotive",
+      "veicoli",
+      "macchine",
+      "motori",
+      "mobilita",
+      "case automobilistiche",
+      matchedAutomotiveBrand
+    ].join(", ");
+  }
+
+  if (matchedPharmaBrand) {
+    return [
+      "farmaceutico",
+      "farmaceutici",
+      "case farmaceutiche",
+      "aziende farmaceutiche",
+      "pharma",
+      "farmaci",
+      "biotecnologia",
+      "biotech",
+      "salute",
+      "sanitario",
+      "healthcare",
+      matchedPharmaBrand
+    ].join(", ");
+  }
+
+  return undefined;
+};
+
 export const buildProductSemanticText = (product: SemanticProductSource) => {
   const parts: string[] = [];
   const productName = product.name ?? product.productName;
@@ -42,6 +148,7 @@ export const buildProductSemanticText = (product: SemanticProductSource) => {
   pushField(parts, "Valuta", product.currency);
   pushField(parts, "Rischio KIID", product.riskKiid);
   pushField(parts, "Profilo rischio", riskProfile(product.riskKiid));
+  pushField(parts, "Tema", getThemeText(productName));
 
   parts.push(`Sostenibile: ${yesNo(product.sustainable)}.`);
   parts.push(`Eco-sostenibile: ${yesNo(product.ecoSustainable)}.`);
