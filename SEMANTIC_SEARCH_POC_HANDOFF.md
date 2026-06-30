@@ -2676,3 +2676,540 @@ Nota operativa:
 - durante il test esisteva gia' un server vecchio sulla porta `3001`
 - il codice aggiornato e' stato verificato su `PORT=3002`
 - per usare il nuovo comportamento in UI bisogna fermare il vecchio server su `3001` e riavviare `npm run api`
+
+---
+
+## Aggiornamento operativo - 2026-06-29
+
+Questa sezione aggiorna e, dove necessario, supera le note precedenti.
+
+### Stato attuale della POC
+
+La POC e' stata riportata a una logica FE-first:
+
+- `transformers.js` gira nel frontend
+- il frontend genera gli embedding dei prodotti mancanti
+- il frontend genera sempre anche l'embedding della query utente
+- il backend non carica piu' il modello e non genera piu' embedding
+- il backend espone prodotti e persiste/recupera embedding da SQLite
+- SQLite e' usato come cache persistente degli embedding prodotti
+
+Flusso attuale:
+
+```text
+FE chiama /health
+-> riceve i prodotti
+FE chiama /api/product-embeddings
+-> riceve gli embedding gia' presenti in SQLite
+FE costruisce l'indice semantico in memoria
+-> se un prodotto non ha embedding, il FE lo genera con transformers.js
+-> il FE salva l'embedding generato via POST /api/product-embeddings
+```
+
+Al refresh pagina e con cache completa:
+
+```text
+precomputedEmbeddings: 1509
+missingEmbeddings: 0
+```
+
+In questo caso il FE ricostruisce solo l'indice in memoria e non deve mostrare log tipo:
+
+```text
+Embedding generato nel FE
+```
+
+### Decisione architetturale aggiornata
+
+Il backend locale Node/Express deve restare semplice:
+
+- server prodotti
+- API health/prodotti
+- lettura embedding da SQLite
+- scrittura embedding in SQLite
+
+Non deve:
+
+- importare `@huggingface/transformers`
+- caricare modelli embedding
+- generare embedding prodotto all'avvio
+- fare semantic search lato server
+
+Il motivo e' che la POC deve dimostrare l'uso di `transformers.js` nel frontend.
+
+### Endpoint backend attuali
+
+Endpoint principali:
+
+```text
+GET /health
+GET /api/product-embeddings
+POST /api/product-embeddings
+GET /api/products
+GET /api/products/search
+GET /api/products/:id
+POST /products
+GET /api/debug/schema
+```
+
+Endpoint semantic search backend:
+
+```text
+POST /api/semantic-search
+```
+
+Non deve piu' esistere o essere usato.
+
+### Cache embedding SQLite
+
+Gli embedding sono salvati nella tabella:
+
+```text
+product_embeddings
+```
+
+Il riuso lato lettura oggi avviene per:
+
+```text
+isin
+model_name
+model_version
+```
+
+Il salvataggio conserva anche:
+
+```text
+semantic_text_hash
+```
+
+Questo hash serve per tracciare quale testo semantico ha prodotto il vettore, ma il recupero per la POC non deve bloccarsi se l'hash cambia. In caso contrario si rischia di avere 1509 righe in SQLite ma vedere comunque rigenerazioni nel FE.
+
+Versione modello corrente:
+
+```text
+model_name: Xenova/paraphrase-multilingual-MiniLM-L12-v2
+model_version: task:feature-extraction|dtype:q4|pooling:mean|normalize:true|semanticText:v1
+dimensione embedding: 384
+```
+
+### Test cache validato
+
+Test fatto:
+
+1. svuotata tabella `product_embeddings`
+2. refresh pagina catalogo prodotti
+3. il FE ha rigenerato gli embedding
+4. il FE li ha salvati su SQLite
+5. refresh successivo
+6. il FE non ha rigenerato nulla, ma ha caricato gli embedding salvati
+
+Esito:
+
+```text
+cache FE + SQLite validata
+```
+
+Task considerato chiuso.
+
+### Pulizia backend svolta
+
+Sono stati rimossi dal backend:
+
+- import di `@huggingface/transformers`
+- uso di `pipeline`
+- `getExtractor`
+- `embedSemanticText`
+- `ensureProductEmbeddings`
+- generazione embedding lato server all'avvio
+- funzioni residue non usate per attaccare embedding ai prodotti via `/health`
+
+File principali:
+
+```text
+server/semanticEmbeddings.js
+server/index.js
+```
+
+Verifiche eseguite:
+
+```text
+node --check server/semanticEmbeddings.js
+node --check server/index.js
+npm run typecheck
+```
+
+### Testo semantico: fonte unica FE
+
+Decisione aggiornata:
+
+```text
+src/semantic-search/buildProductSemanticText.ts
+```
+
+e' la fonte ufficiale del testo semantico.
+
+Il backend non deve piu' ricostruire il testo semantico dei prodotti.
+
+Flusso corretto:
+
+```text
+FE costruisce semanticText
+FE genera embedding
+FE manda semanticText + embedding al BE
+BE salva hash + vettore
+BE restituisce solo embedding + metadati
+FE ricostruisce semanticText quando costruisce l'indice
+```
+
+Questo evita divergenze tra testo semantico FE e testo semantico BE.
+
+### Log utili da controllare
+
+Quando la cache e' piena, al refresh devono comparire log simili:
+
+```text
+[semantic-search] Avvio ricostruzione indice FE da cache SQLite
+productsCount: 1509
+precomputedEmbeddings: 1509
+missingEmbeddings: 0
+```
+
+Non devono comparire rigenerazioni massive:
+
+```text
+Embedding generato nel FE
+Caricamento modello embedding reale
+```
+
+Nota: il modello puo' essere comunque caricato quando si effettua una query, per generare l'embedding del testo utente.
+
+### AI-driven interface svolta
+
+E' stata implementata una prima versione dell'interfaccia AI-driven per rendere piu' evidenti i risultati migliori.
+
+File principali:
+
+```text
+src/semantic-search/useSemanticProductSearch.ts
+src/components/ListProducts/ListProducts.tsx
+src/components/ListProducts/ListProducts.scss
+src/components/widget/WidgetProductList/WidgetProductList.tsx
+src/components/widget/WidgetProductList/WidgetProductList.scss
+```
+
+Comportamento implementato:
+
+- i primi 3 risultati semantici vengono marcati con metadati UI `_semanticHighlight`
+- nella tabella prodotti i primi 3 risultati hanno evidenziazione visiva
+- sopra la tabella compare un box `Top match`
+- il box mostra i 3 risultati piu' rilevanti
+- ogni card mostra:
+  - rank
+  - label (`Miglior match`, `Molto coerente`, `Buona corrispondenza`)
+  - nome prodotto
+  - ISIN
+  - valuta
+  - SRRI
+  - barra visuale di rilevanza
+  - score numerico
+  - motivazioni leggibili quando disponibili
+
+Colori attuali:
+
+- primo match: arancione
+- secondo match: blu
+- terzo match: verde
+
+La barra di rilevanza e' normalizzata rispetto al primo risultato della ricerca:
+
+```text
+score prodotto / score primo risultato
+```
+
+Nota: se gli score sono molto vicini, le barre possono apparire simili; per questo lo score numerico e' stato reintrodotto accanto alla barra.
+
+Motivazioni leggibili gia' gestite:
+
+- `rischio basso`
+- `rischio alto`
+- `rischio richiesto`
+- `rischio vicino`
+- `sostenibile`
+- `eco-sostenibile`
+- `PAI`
+- `con cedola`
+- `valuta EUR`
+- `tema automotive`
+- `tema farmaceutico`
+- `collocato`
+
+Nota importante:
+
+- `tema automotive` e `tema farmaceutico` oggi derivano da ranking business/regole esplicite
+- non sono ancora categorie riconosciute da un modello query
+- in futuro il modello di query understanding dovra' estrarre categorie/temi e renderli disponibili al ranking e al box Top match
+
+### Fix tecnici UI/catalogo svolti
+
+#### Paginazione `Mostra altri`
+
+Problema osservato:
+
+- clic su `Mostra altri`
+- l'API `/products?page=1&size=10&types=FUND` partiva
+- la risposta risultava vuota o non coerente con il primo caricamento
+
+Causa probabile:
+
+- il primo caricamento mandava il payload storico:
+
+```ts
+{ productype: [productTypes.FUND] }
+```
+
+- `fetchMore` invece mandava `parsedFilterRequestDTO()`, cioe' una forma diversa (`productType`)
+
+Fix:
+
+- quando non e' stata eseguita una ricerca avanzata, `fetchMore` usa lo stesso payload del primo caricamento:
+
+```ts
+{ productype: [productTypes.FUND] }
+```
+
+- quando la ricerca avanzata e' attiva, continua a usare `parsedFilterRequestDTO()`
+
+#### Opzioni ricerca avanzata
+
+Problema osservato:
+
+- le API `/advanced-product-filter` e `/product-company-names` venivano chiamate
+- le select/options non si popolavano
+
+Causa sospetta:
+
+- lo stato iniziale contiene valori vuoti, ad esempio:
+
+```ts
+isPlaced: [""]
+```
+
+- questi valori potevano finire nel payload delle API filtri
+
+Fix:
+
+- aggiunta funzione `cleanAdvancedFilterPayload`
+- prima di chiamare `/advanced-product-filter` e `/product-company-names`, il payload viene ripulito da:
+  - stringhe vuote
+  - `null`
+  - `undefined`
+  - array senza valori reali
+
+Log aggiunti:
+
+```text
+[semantic-search] Caricamento opzioni ricerca avanzata
+[semantic-search] Opzioni ricerca avanzata ricevute
+[semantic-search] Ricaricamento opzioni ricerca avanzata
+[semantic-search] Opzioni ricerca avanzata ricaricate
+```
+
+Questi log servono a distinguere:
+
+- problema di request/payload
+- problema di response API
+- problema di mapping UI in `advancedProductSearchModelOptions`
+
+#### Overflow/margine verso destra
+
+Problema osservato:
+
+- a schermo intero il container sembrava spostato verso destra
+
+Causa probabile:
+
+- i nuovi box `Ricerca semantica` e `Top match` avevano `width: 100%` piu' `padding` e `border`
+- con box model standard potevano diventare piu' larghi del container
+
+Fix:
+
+```scss
+.widgetProductsList__semanticSearch {
+  box-sizing: border-box;
+}
+
+.widgetProductsList__topMatches {
+  box-sizing: border-box;
+}
+```
+
+### Task rimasti
+
+#### 1. Modello per trasformare la query utente
+
+Serve un modello diverso dal modello embedding.
+
+Obiettivo:
+
+- prendere la frase libera dell'utente
+- riscriverla in una query piu' utile alla generazione embedding
+- estrarre eventuali vincoli strutturati
+- segnalare vincoli non supportati dai dati disponibili
+
+Esempio:
+
+```text
+fondo con rendimento alto ma rischio basso
+```
+
+puo' diventare:
+
+```json
+{
+  "semanticQuery": "prodotto finanziario prudente con rischio basso",
+  "constraints": {
+    "riskKiid": "low"
+  },
+  "unsupportedConstraints": ["rendimento/performance"]
+}
+```
+
+Nota importante:
+
+- questo non e' un modello embedding
+- e' un modello di query understanding / query rewrite
+
+Sotto-task aggiunto:
+
+- il modello deve identificare categorie/temi nella query del consulente
+- esempi: `automotive`, `pharma`, `tech`, `difesa`, `healthcare`
+- la categoria estratta deve poter influenzare ranking e Top match
+- la categoria deve comparire come motivazione leggibile quando utile
+
+Flusso desiderato:
+
+```text
+query consulente
+-> modello query estrae intenti/categorie/vincoli
+-> embedding cerca semanticamente
+-> ranking business usa categorie/vincoli estratti
+-> Top match mostra motivazioni coerenti
+```
+
+#### 2. Valutazione qualita' modello embedding
+
+Preparare una mini-suite di query e risultati attesi.
+
+Obiettivo:
+
+- capire se `Xenova/paraphrase-multilingual-MiniLM-L12-v2` e' adeguato
+- confrontare top 3/top 10
+- capire dove servono regole business o query rewrite
+
+Query candidate:
+
+- `prodotti sostenibili con rischio basso`
+- `prodotti sostenibili con rischio medio`
+- `prodotti di aziende nel settore informatico`
+- `prodotti militari`
+- `dammi le azioni di amazon`
+- `prodotti simili a <ISIN>`
+
+#### 3. Migliorare ricerca "prodotti simili a ISIN"
+
+Oggi la similarita' puo' essere debole, soprattutto sui prodotti extra/equity.
+
+Task:
+
+- calcolare una similarita' esplicita tra caratteristiche
+- separare nei log `embeddingScore`, `characteristicsBoost`, `finalScore`
+- confrontare product type, asset class, rischio, valuta, sostenibilita', eco, PAI, BIC, cedola
+- evitare di fingere similarita' settoriale se il settore non e' presente nei dati
+
+#### 4. Recuperare campi mancanti per similarita'
+
+Open point:
+
+- per similarita' seria servono piu' dati sui prodotti
+- soprattutto per prodotti extra/equity
+
+Campi utili:
+
+- settore
+- industria
+- tema
+- descrizione
+- sottostanti
+- emittente
+
+Nota gia' discussa:
+
+- le performance/rendimenti cambiano spesso
+- meglio non usarle come dato statico nella POC, salvo fonte aggiornata
+
+#### 5. IndexedDB come buffer locale embedding
+
+Task volutamente ultimo.
+
+Idea:
+
+- il FE salva subito gli embedding generati in IndexedDB
+- poi sincronizza verso SQLite in un secondo momento
+
+Benefici:
+
+- piu' resilienza se la pagina viene chiusa
+- meno dipendenza immediata dal backend durante la generazione
+- base piu' robusta per sync asincrona
+
+Costo:
+
+- aumenta la complessita' della POC
+
+Per questo resta l'ultimo task.
+
+
+### Task rimossi / non prioritari
+
+#### Salvataggio batch FE -> SQLite
+
+Era stato valutato un endpoint batch per salvare embedding a blocchi.
+
+Decisione attuale:
+
+- non farlo ora
+- verra' eventualmente superato da IndexedDB come buffer locale
+
+### Comandi utili
+
+Avviare backend POC:
+
+```text
+npm run api
+```
+
+Avviare frontend:
+
+```text
+npm run dev
+```
+
+Svuotare la cache embedding SQLite:
+
+```text
+node -e "const { DatabaseSync } = require('node:sqlite'); const db = new DatabaseSync('server/data/semantic-search.db'); db.exec('DELETE FROM product_embeddings'); db.close();"
+```
+
+Controllare quanti embedding sono salvati:
+
+```text
+node -e "const { DatabaseSync } = require('node:sqlite'); const db = new DatabaseSync('server/data/semantic-search.db'); console.log(db.prepare('SELECT COUNT(*) AS count FROM product_embeddings').get()); db.close();"
+```
+
+Verifiche tecniche:
+
+```text
+node --check server/semanticEmbeddings.js
+node --check server/index.js
+npm run typecheck
+```

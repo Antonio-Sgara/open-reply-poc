@@ -5,6 +5,13 @@ const EMBEDDING_SIZE = 128;
 export const EMBEDDING_MODEL_ID =
   "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
 const EMBEDDING_MODEL_DTYPE = "q4";
+export const EMBEDDING_MODEL_VERSION = [
+  "task:feature-extraction",
+  `dtype:${EMBEDDING_MODEL_DTYPE}`,
+  "pooling:mean",
+  "normalize:true",
+  "semanticText:v1"
+].join("|");
 
 type FeatureExtractionPipeline = (
   text: string,
@@ -14,6 +21,7 @@ type FeatureExtractionPipeline = (
 let extractorPromise: Promise<FeatureExtractionPipeline> | null = null;
 let isModelUnavailable = false;
 let hasLoggedModelFallback = false;
+let generatedModelEmbeddingLogs = 0;
 const embeddingCache = new Map<string, Promise<SemanticEmbedding>>();
 
 const SYNONYMS: Record<string, string[]> = {
@@ -132,15 +140,22 @@ const embedTextWithModel = async (text: string): Promise<SemanticEmbedding> => {
     normalize: true
   });
   const embedding = tensorToEmbedding(output);
+  generatedModelEmbeddingLogs += 1;
 
-  semanticDebugGroup("Embedding reale generato", () => {
-    console.log("Provider:", "@huggingface/transformers");
-    console.log("Modello:", EMBEDDING_MODEL_ID);
-    console.log("Quantizzazione:", EMBEDDING_MODEL_DTYPE);
-    console.log("Input testo:", text);
-    console.log("Dimensione vettore:", embedding.length);
-    console.log("Prime dimensioni:", embedding.slice(0, 12));
-  });
+  if (
+    generatedModelEmbeddingLogs <= 3 ||
+    generatedModelEmbeddingLogs % 25 === 0
+  ) {
+    semanticDebugGroup("Embedding reale generato", () => {
+      console.log("Progressivo embedding modello:", generatedModelEmbeddingLogs);
+      console.log("Provider:", "@huggingface/transformers");
+      console.log("Modello:", EMBEDDING_MODEL_ID);
+      console.log("Quantizzazione:", EMBEDDING_MODEL_DTYPE);
+      console.log("Input testo:", text);
+      console.log("Dimensione vettore:", embedding.length);
+      console.log("Prime dimensioni:", embedding.slice(0, 12));
+    });
+  }
 
   return embedding;
 };

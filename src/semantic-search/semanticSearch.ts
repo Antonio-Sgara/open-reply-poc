@@ -10,6 +10,14 @@ import {
   SemanticProductSource
 } from "./semanticTypes";
 
+const DEFAULT_INDEX_BATCH_SIZE = 10;
+const DEFAULT_INDEX_BATCH_PAUSE_MS = 20;
+
+const yieldToBrowser = (pauseMs = DEFAULT_INDEX_BATCH_PAUSE_MS) =>
+  new Promise<void>(resolve => {
+    window.setTimeout(resolve, pauseMs);
+  });
+
 const normalizeText = (text: string) =>
   text
     .toLowerCase()
@@ -76,41 +84,100 @@ const calculateRelativeRiskBoost = (
 };
 
 export const buildSemanticIndex = async <TProduct extends SemanticProductSource>(
-  products: TProduct[]
+  products: TProduct[],
+  options: {
+    batchSize?: number;
+    batchPauseMs?: number;
+    onEmbeddingGenerated?: (payload: {
+      product: TProduct;
+      semanticText: string;
+      embedding: number[];
+    }) => Promise<void> | void;
+  } = {}
 ): Promise<SemanticProductIndexItem<TProduct>[]> => {
+  const batchSize = options.batchSize ?? DEFAULT_INDEX_BATCH_SIZE;
+  const batchPauseMs = options.batchPauseMs ?? DEFAULT_INDEX_BATCH_PAUSE_MS;
+  const precomputedEmbeddings = products.filter(product =>
+    Array.isArray(product.semanticEmbedding)
+  ).length;
+  const missingEmbeddings = products.length - precomputedEmbeddings;
   semanticDebugLog("Costruzione indice prodotti", {
     productsCount: products.length,
-    precomputedEmbeddings: products.filter(product =>
-      Array.isArray(product.semanticEmbedding)
-    ).length
+    source:
+      missingEmbeddings === 0
+        ? "cache SQLite: ricostruzione indice FE in memoria"
+        : "Transformers.js FE: generazione embedding mancanti",
+    precomputedEmbeddings,
+    missingEmbeddings,
+    batchSize,
+    batchPauseMs
   });
 
   const index: SemanticProductIndexItem<TProduct>[] = [];
+  let generatedEmbeddings = 0;
 
   for (const [position, product] of products.entries()) {
-    const semanticText = product.semanticText ?? buildProductSemanticText(product);
+    const {
+      semanticEmbedding,
+      semanticText: precomputedSemanticText,
+      semanticEmbeddingGeneratedAt,
+      semanticEmbeddingModel,
+      semanticEmbeddingModelVersion,
+      ...productWithoutEmbedding
+    } = product;
+    const semanticText =
+      precomputedSemanticText ?? buildProductSemanticText(product);
+    const hasPrecomputedEmbedding = Array.isArray(semanticEmbedding);
+    const embedding = hasPrecomputedEmbedding
+      ? semanticEmbedding
+      : await embedText(semanticText);
+
+    if (!hasPrecomputedEmbedding) {
+      generatedEmbeddings += 1;
+      options.onEmbeddingGenerated?.({
+        product,
+        semanticText,
+        embedding
+      });
+    }
 
     index.push({
       productId: `${product.productId ?? product.isin ?? product.name ?? ""}`,
       semanticText,
-      embedding: Array.isArray(product.semanticEmbedding)
-        ? product.semanticEmbedding
-        : await embedText(semanticText),
-      product
+      embedding,
+      product: productWithoutEmbedding as TProduct
     });
 
     const indexedProducts = position + 1;
     if (indexedProducts % 25 === 0 || indexedProducts === products.length) {
       semanticDebugLog("Avanzamento indice prodotti", {
         indexedProducts,
-        productsCount: products.length
+        productsCount: products.length,
+        generatedEmbeddings
       });
+    }
+
+    if (
+      generatedEmbeddings > 0 &&
+      generatedEmbeddings % batchSize === 0 &&
+      indexedProducts < products.length
+    ) {
+      semanticDebugLog("Pausa indicizzazione FE per mantenere UI reattiva", {
+        generatedEmbeddings,
+        indexedProducts,
+        pauseMs: batchPauseMs
+      });
+      await yieldToBrowser(batchPauseMs);
     }
   }
 
   semanticDebugGroup("Indice prodotti costruito", () => {
+    console.log("Prodotti indicizzati:", index.length);
+    console.log("Origine indice:", missingEmbeddings === 0 ? "cache SQLite" : "mista");
+    console.log("Embedding precomputati:", precomputedEmbeddings);
+    console.log("Embedding generati nel FE:", generatedEmbeddings);
     console.table(
-      index.map(item => ({
+      index.slice(0, 20).map(item => ({
         productId: item.productId,
         name: item.product.name ?? item.product.productName,
         riskKiid: item.product.riskKiid,
@@ -119,7 +186,14 @@ export const buildSemanticIndex = async <TProduct extends SemanticProductSource>
         coupon: item.product.coupon
       }))
     );
-    console.log("Dettaglio testi semantici:", index);
+    console.log(
+      "Esempi testi semantici:",
+      index.slice(0, 3).map(item => ({
+        productId: item.productId,
+        semanticText: item.semanticText,
+        embeddingDimensions: item.embedding.length
+      }))
+    );
   });
 
   return index;

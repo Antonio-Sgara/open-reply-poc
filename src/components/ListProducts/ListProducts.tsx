@@ -165,6 +165,28 @@ const ListProducts: React.FC<IProps> = ({
     return isin;
   };
 
+  const getSemanticHighlightClassName = (product: any) => {
+    const rank = product?._semanticHighlight?.rank;
+    if (!rank || rank > 3) return "";
+
+    return `listProducts__semanticHighlight listProducts__semanticHighlight--${rank}`;
+  };
+
+  const getSemanticHighlightTitle = (product: any) => {
+    const highlight = product?._semanticHighlight;
+    if (!highlight) return undefined;
+
+    const score =
+      typeof highlight.score === "number"
+        ? `Score ${highlight.score.toFixed(3)}`
+        : undefined;
+    const rules = highlight.matchedRules?.length
+      ? highlight.matchedRules.join(", ")
+      : undefined;
+
+    return [score, rules].filter(Boolean).join(" - ");
+  };
+
   const handlePreferredFilter = (_e: any, _id: any, preferred: boolean) => {
     props.filterPreferred?.(preferred);
   };
@@ -545,11 +567,9 @@ const ListProducts: React.FC<IProps> = ({
                 props.products.map((product, index) => (
                   <TrTableRow
                     key={`key_${index}_${product.productId}`}
-                    className={
-                      product.belowMinInvestable
-                        ? "investmentProspectList__trCTVError"
-                        : ""
-                    }
+                    className={`${product.belowMinInvestable
+                      ? "investmentProspectList__trCTVError"
+                      : ""} ${getSemanticHighlightClassName(product)}`.trim()}
                   >
                     {Object.keys(headers).map(header => (
                       <td
@@ -719,6 +739,14 @@ const ListProducts: React.FC<IProps> = ({
                             ) : (
                               <span className={"not-clickable"}>
                                 {product.name?.toLocaleUpperCase()}
+                              </span>
+                            )}
+                            {product?._semanticHighlight && (
+                              <span
+                                className="listProductsTd__semanticBadge"
+                                title={getSemanticHighlightTitle(product)}
+                              >
+                                {product._semanticHighlight.label}
                               </span>
                             )}
                           </span>

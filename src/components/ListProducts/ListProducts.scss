@@ -25,11 +25,61 @@
 }
 
 .listProductsTd__name {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+
   .not-clickable,
   a {
     color: $color-blu-dark;
     font-weight: 400;
     text-decoration: none;
+  }
+}
+
+.listProductsTd__semanticBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  border-radius: 4px;
+  padding: 2px 7px;
+  background: rgba(38, 77, 122, 0.1);
+  color: $color-blu-dark;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  text-transform: uppercase;
+}
+
+.simpleTable__tableRow.listProducts__semanticHighlight {
+  td {
+    background: #f7fafc;
+
+    &:first-child {
+      border-left: 4px solid rgba(38, 77, 122, 0.35);
+    }
+  }
+
+  &--1 td {
+    background: #fffaf0;
+
+    &:first-child {
+      border-left-color: $color-orange;
+    }
+  }
+
+  &--1 .listProductsTd__semanticBadge {
+    background: rgba(236, 127, 45, 0.15);
+    color: $color-orange;
+  }
+
+  &--2 td:first-child {
+    border-left-color: rgba(38, 77, 122, 0.65);
+  }
+
+  &--3 td:first-child {
+    border-left-color: rgba(38, 77, 122, 0.45);
   }
 }
 

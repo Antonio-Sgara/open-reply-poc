@@ -4,9 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import {
-  attachStoredEmbedding,
   createEmbeddingRepository,
-  ensureProductEmbeddings
+  hashSemanticText
 } from "./semanticEmbeddings.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -262,14 +261,34 @@ let embeddingStats = {
   failed: 0
 };
 
+const scanProductEmbeddingCache = products => {
+  const stats = {
+    status: "ready",
+    modelName: undefined,
+    modelVersion: undefined,
+    totalProducts: products.length,
+    cached: 0,
+    generated: 0,
+    failed: 0
+  };
+
+  products.forEach(product => {
+    const cachedEmbedding = embeddingRepository.getCurrent(product);
+
+    if (cachedEmbedding) {
+      stats.cached += 1;
+      stats.modelName = cachedEmbedding.modelName;
+      stats.modelVersion = cachedEmbedding.modelVersion;
+    }
+  });
+
+  return stats;
+};
+
 app.get("/health", (_, response) => {
   const rows = getProductRows();
-  const products = rows.map(row =>
-    attachStoredEmbedding(parseProduct(row), embeddingRepository)
-  );
-  const productsWithEmbedding = products.filter(product =>
-    Array.isArray(product.semanticEmbedding)
-  ).length;
+  const products = rows.map(parseProduct);
+  embeddingStats = scanProductEmbeddingCache(products);
 
   response.json({
     status: "ok",
@@ -277,9 +296,57 @@ app.get("/health", (_, response) => {
     ...seedStats,
     embeddingStats: {
       ...embeddingStats,
-      productsWithEmbedding
+      productsWithEmbedding: embeddingStats.cached + embeddingStats.generated
     },
     products
+  });
+});
+
+app.get("/api/product-embeddings", (_, response) => {
+  const products = getProductRows().map(parseProduct);
+  const embeddings = products
+    .map(product => {
+      const cachedEmbedding = embeddingRepository.getCurrent(product);
+
+      if (!cachedEmbedding) return undefined;
+
+      return {
+        productId: product.productId,
+        isin: product.isin,
+        semanticEmbedding: cachedEmbedding.embedding,
+        semanticEmbeddingGeneratedAt: cachedEmbedding.generatedAt,
+        semanticEmbeddingModel: cachedEmbedding.modelName,
+        semanticEmbeddingModelVersion: cachedEmbedding.modelVersion
+      };
+    })
+    .filter(Boolean);
+
+  response.json({
+    totalProducts: products.length,
+    cached: embeddings.length,
+    embeddings
+  });
+});
+
+app.post("/api/product-embeddings", (request, response) => {
+  const { product, semanticText, embedding } = request.body ?? {};
+
+  if (!product?.isin || !semanticText || !Array.isArray(embedding)) {
+    response.status(400).json({
+      message: "product.isin, semanticText and embedding[] are required"
+    });
+    return;
+  }
+
+  embeddingRepository.save(
+    product,
+    hashSemanticText(semanticText),
+    embedding.map(Number)
+  );
+
+  response.status(201).json({
+    saved: true,
+    isin: product.isin
   });
 });
 
@@ -333,33 +400,9 @@ app.get("/api/debug/schema", (_, response) => {
   response.json(schema);
 });
 
-const startServer = async () => {
+const startServer = () => {
   const products = getProductRows().map(parseProduct);
-
-  try {
-    embeddingStats = {
-      status: "running",
-      modelName: undefined,
-      modelVersion: undefined,
-      totalProducts: products.length,
-      cached: 0,
-      generated: 0,
-      failed: 0
-    };
-    embeddingStats = {
-      status: "ready",
-      ...(await ensureProductEmbeddings({
-        products,
-        repository: embeddingRepository
-      }))
-    };
-  } catch (error) {
-    embeddingStats = {
-      ...embeddingStats,
-      status: "failed"
-    };
-    console.error("[semantic-search-api] Embedding bootstrap failed", error);
-  }
+  embeddingStats = scanProductEmbeddingCache(products);
 
   httpServer = app.listen(PORT, HOST, () => {
     httpServer.ref();

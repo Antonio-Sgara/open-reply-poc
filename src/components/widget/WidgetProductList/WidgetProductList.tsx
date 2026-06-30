@@ -33,16 +33,69 @@ import IconWithPopover from "components/IconWithPopover/IconWithPopover";
 import { ReactiveDateRangePicker } from "components/ReactiveDateRangePicker/ReactiveDateRangePicker";
 import InfoAlert from "components/InfoAlert";
 import { useSemanticProductSearch } from "../../../semantic-search/useSemanticProductSearch";
-import { semanticDebugLog } from "../../../semantic-search/debug";
-import localSemanticProducts from "../../../products.json";
+import { semanticDebugGroup, semanticDebugLog } from "../../../semantic-search/debug";
+import {
+  EMBEDDING_MODEL_ID,
+  EMBEDDING_MODEL_VERSION
+} from "../../../semantic-search/embeddingService";
 import "./WidgetProductList.scss";
 
 const POC_API_HEALTH_URL = "http://127.0.0.1:3001/health";
+const POC_API_PRODUCT_EMBEDDINGS_URL =
+  "http://127.0.0.1:3001/api/product-embeddings";
 
 interface IProps {
   className?: string;
   selectedView?: string;
 }
+
+const TOP_MATCH_LABELS = ["Miglior match", "Molto coerente", "Buona corrispondenza"];
+
+const getSemanticScoreValue = (result: any) =>
+  result.finalScore ?? result.score ?? 0;
+
+const formatSemanticScore = (score: number) => score.toFixed(3);
+
+const getSemanticScoreBarWidth = (score: number, topScore: number) => {
+  if (!topScore || topScore <= 0) return 0;
+  return Math.max(8, Math.min(100, Math.round((score / topScore) * 100)));
+};
+
+const getReadableSemanticReasons = (rules: string[] = []) => {
+  const reasons = rules
+    .map(rule => {
+      if (rule.includes("riskKiid basso")) return "rischio basso";
+      if (rule.includes("riskKiid alto")) return "rischio alto";
+      if (rule.includes("riskKiid exact")) return "rischio richiesto";
+      if (rule.includes("riskKiid near")) return "rischio vicino";
+      if (rule.includes("sustainable true")) return "sostenibile";
+      if (rule.includes("ecoSustainable true")) return "eco-sostenibile";
+      if (rule.includes("pai true")) return "PAI";
+      if (rule.includes("coupon true")) return "con cedola";
+      if (rule.includes("currency EUR")) return "valuta EUR";
+      if (rule.includes("automotive brand")) return "tema automotive";
+      if (rule.includes("pharma brand")) return "tema farmaceutico";
+      if (rule.includes("isPlaced true")) return "collocato";
+      return undefined;
+    })
+    .filter(Boolean);
+
+  return [...new Set(reasons)].slice(0, 3);
+};
+
+const cleanAdvancedFilterPayload = (payload: IFiltersDTO) => {
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => {
+      if (Array.isArray(value)) {
+        return value.some(
+          item => item !== "" && item !== undefined && item !== null
+        );
+      }
+
+      return value !== "" && value !== undefined && value !== null;
+    })
+  );
+};
 
 export interface FilterDTOParsingOptions {
   isSorting?: boolean;
@@ -88,10 +141,49 @@ const WidgetProductsList: FC<IProps> = ({
   const [errorAdvancedSearch, setErrorAdvancedSearch] = useState(false);
   const [pastMonthLastDay, setPastMonthLastDay] = useState("");
   const [pocApiProducts, setPocApiProducts] = useState<any[]>([]);
+  const generatedEmbeddingSaveCountRef = React.useRef(0);
   const semanticDatasetProducts = useMemo(
-    () =>
-      pocApiProducts.length > 0 ? pocApiProducts : (localSemanticProducts as any[]),
+    () => (pocApiProducts.length > 0 ? pocApiProducts : []),
     [pocApiProducts]
+  );
+  const saveGeneratedEmbedding = useCallback(
+    ({ product, semanticText, embedding }) => {
+      generatedEmbeddingSaveCountRef.current += 1;
+      const generated = generatedEmbeddingSaveCountRef.current;
+
+      if (generated % 25 === 0 || generated === 1) {
+        semanticDebugLog("Embedding generato nel FE, salvo su SQLite", {
+          generated,
+          productId: product.productId,
+          isin: product.isin,
+          model: EMBEDDING_MODEL_ID,
+          modelVersion: EMBEDDING_MODEL_VERSION,
+          dimensions: embedding.length
+        });
+      }
+
+      fetch(POC_API_PRODUCT_EMBEDDINGS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          product: {
+            productId: product.productId,
+            isin: product.isin
+          },
+          semanticText,
+          embedding
+        })
+      }).catch(error => {
+        semanticDebugLog("Salvataggio embedding su SQLite fallito", {
+          productId: product.productId,
+          isin: product.isin,
+          error: error instanceof Error ? error.message : error
+        });
+      });
+    },
+    []
   );
   const {
     semanticQuery,
@@ -102,7 +194,10 @@ const WidgetProductsList: FC<IProps> = ({
     isSemanticSearchActive,
     searchSemantically,
     clearSemanticSearch
-  } = useSemanticProductSearch<any>(semanticDatasetProducts);
+  } = useSemanticProductSearch<any>(semanticDatasetProducts, {
+    useBackendSearch: false,
+    onEmbeddingGenerated: saveGeneratedEmbedding
+  });
 
   const firstSearchProducts = (resetInputSearch = false) => {
     if (savedFilters && savedFilters?.filters) {
@@ -145,10 +240,9 @@ const WidgetProductsList: FC<IProps> = ({
 
         return response.json();
       })
-      .then(data => {
+      .then(async data => {
         if (!isMounted) return;
         const apiProducts = Array.isArray(data?.products) ? data.products : [];
-        setPocApiProducts(apiProducts);
         semanticDebugLog("Prodotti caricati dal server POC", {
           count: apiProducts.length,
           status: data?.status,
@@ -157,12 +251,64 @@ const WidgetProductsList: FC<IProps> = ({
           storedCount: data?.storedCount,
           embeddingStats: data?.embeddingStats
         });
+
+        try {
+          const embeddingResponse = await fetch(POC_API_PRODUCT_EMBEDDINGS_URL);
+          if (!embeddingResponse.ok) {
+            throw new Error(
+              `POC API embeddings failed: ${embeddingResponse.status}`
+            );
+          }
+
+          const embeddingData = await embeddingResponse.json();
+          const embeddingsByIsin = new Map<string, any>(
+            (embeddingData?.embeddings ?? []).map((embedding: any) => [
+              embedding.isin,
+              embedding
+            ])
+          );
+          const productsWithCachedEmbeddings = apiProducts.map(product => ({
+            ...product,
+            ...(embeddingsByIsin.get(product.isin) ?? {})
+          }));
+
+          setPocApiProducts(productsWithCachedEmbeddings);
+          semanticDebugGroup("Embedding prodotti letti da SQLite per FE", () => {
+            console.log("Prodotti totali:", apiProducts.length);
+            console.log("Embedding in cache SQLite:", embeddingData?.cached ?? 0);
+            console.log(
+              "Embedding mancanti da generare nel FE:",
+              apiProducts.length - (embeddingData?.cached ?? 0)
+            );
+            console.table(
+              productsWithCachedEmbeddings.slice(0, 20).map(product => ({
+                productId: product.productId,
+                isin: product.isin,
+                name: product.name ?? product.productName,
+                hasCachedEmbedding: Array.isArray(product.semanticEmbedding),
+                embeddingDimensions: product.semanticEmbedding?.length,
+                model: product.semanticEmbeddingModel,
+                modelVersion: product.semanticEmbeddingModelVersion
+              }))
+            );
+          });
+        } catch (error) {
+          setPocApiProducts(apiProducts);
+          semanticDebugLog(
+            "Embedding SQLite non disponibili: il FE li generera' con Transformers.js",
+            {
+              url: POC_API_PRODUCT_EMBEDDINGS_URL,
+              error: error instanceof Error ? error.message : error,
+              products: apiProducts.length
+            }
+          );
+        }
       })
       .catch(error => {
-        semanticDebugLog("Server POC non disponibile, uso dataset locale", {
+        semanticDebugLog("Server POC non disponibile", {
           url: POC_API_HEALTH_URL,
           error: error instanceof Error ? error.message : error,
-          fallbackCount: (localSemanticProducts as any[]).length
+          localFallbackDisabled: true
         });
       });
 
@@ -215,24 +361,44 @@ const WidgetProductsList: FC<IProps> = ({
 
   const fetchMore = useCallback(() => {
     const page = currentPage + 1;
+    const filtersDTO = isAdvancedSearchPerformed
+      ? parsedFilterRequestDTO()
+      : { productype: [productTypes.FUND] };
     fetchData(
       getParams(page, sorted, showFavorites),
       false,
       null,
-      parsedFilterRequestDTO()
+      filtersDTO
     );
     setCurrentPage(page);
-  }, [currentPage, products, sorted, activeSort]);
+  }, [
+    currentPage,
+    products,
+    sorted,
+    activeSort,
+    showFavorites,
+    isAdvancedSearchPerformed,
+    activeFilters
+  ]);
 
   const fetchAdvancedSearchItems = () => {
     setIsLoadingOptions(true);
 
-    const parsedFilters = parsedFilterRequestDTO({ flatten: false, filters });
+    const parsedFilters = cleanAdvancedFilterPayload(
+      parsedFilterRequestDTO({ flatten: false, filters })
+    );
+    semanticDebugLog("Caricamento opzioni ricerca avanzata", {
+      parsedFilters
+    });
     const advancedProductFilterPromise = getAdvancedProductFilter(parsedFilters);
     const productCompanyNamesPromise = getProductCompanyNames(parsedFilters);
 
     Promise.all([advancedProductFilterPromise, productCompanyNamesPromise])
       .then(responses => {
+        semanticDebugGroup("Opzioni ricerca avanzata ricevute", () => {
+          console.log("advanced-product-filter", responses[0]);
+          console.log("product-company-names", responses[1]);
+        });
         setProdFilter(responses[0]);
         setCompanyName(responses[1]);
         setIsLoadingOptions(false);
@@ -521,12 +687,22 @@ const WidgetProductsList: FC<IProps> = ({
     filterIdToKeep?: string
   ) => {
     setIsLoadingOptions(true);
-    const parsedFilters = parsedFilterRequestDTO({ flatten: false, filters });
+    const parsedFilters = cleanAdvancedFilterPayload(
+      parsedFilterRequestDTO({ flatten: false, filters })
+    );
+    semanticDebugLog("Ricaricamento opzioni ricerca avanzata", {
+      filterIdToKeep,
+      parsedFilters
+    });
     const advancedProductFilterPromise = getAdvancedProductFilter(parsedFilters);
     const productCompanyNamesPromise = getProductCompanyNames(parsedFilters);
 
     Promise.all([advancedProductFilterPromise, productCompanyNamesPromise])
       .then(responses => {
+        semanticDebugGroup("Opzioni ricerca avanzata ricaricate", () => {
+          console.log("advanced-product-filter", responses[0]);
+          console.log("product-company-names", responses[1]);
+        });
         const advancedProductFilterResponse: any = responses[0];
         if (filterIdToKeep && prodFilter) {
           for (const option of (prodFilter as any)[filterIdToKeep] ?? []) {
@@ -792,6 +968,87 @@ const WidgetProductsList: FC<IProps> = ({
                 : `La ricerca interpreta una frase libera su ${semanticDatasetProducts.length} prodotti della POC.`}
           </div>
         </form>
+      )}
+      {!isShowingSecondary && isSemanticSearchActive && semanticResults.length > 0 && (
+        <section
+          className="widgetProductsList__topMatches"
+          aria-label="Top match ricerca semantica"
+        >
+          <div className="widgetProductsList__topMatchesHeader">
+            <div>
+              <div className="widgetProductsList__topMatchesEyebrow">
+                Top match
+              </div>
+              <div className="widgetProductsList__topMatchesTitle">
+                Risultati piu' rilevanti
+              </div>
+            </div>
+            <div className="widgetProductsList__topMatchesCount">
+              {Math.min(semanticResults.length, 3)} di {semanticResults.length}
+            </div>
+          </div>
+          <div className="widgetProductsList__topMatchesGrid">
+            {semanticResults.slice(0, 3).map((result, index) => {
+              const topScore = getSemanticScoreValue(semanticResults[0]);
+              const score = getSemanticScoreValue(result);
+              const scoreWidth = getSemanticScoreBarWidth(score, topScore);
+              const product = result.product;
+              const reasons = getReadableSemanticReasons(result.matchedRules);
+
+              return (
+                <article
+                  className={`widgetProductsList__topMatch widgetProductsList__topMatch--${index +
+                    1}`}
+                  key={`semantic-top-match-${product.productId ?? product.isin}`}
+                >
+                  <div className="widgetProductsList__topMatchRank">
+                    {index + 1}
+                  </div>
+                  <div className="widgetProductsList__topMatchContent">
+                    <div className="widgetProductsList__topMatchLabel">
+                      {TOP_MATCH_LABELS[index]}
+                    </div>
+                    <div className="widgetProductsList__topMatchName">
+                      {(product.name ?? product.productName ?? "-").toLocaleUpperCase()}
+                    </div>
+                    <div className="widgetProductsList__topMatchMeta">
+                      <span>{product.isin ?? "-"}</span>
+                      <span>{product.currency ?? "-"}</span>
+                      <span>
+                        SRRI{" "}
+                        {typeof product.riskKiid === "number"
+                          ? product.riskKiid
+                          : "-"}
+                      </span>
+                    </div>
+                    <div className="widgetProductsList__topMatchFooter">
+                      <div
+                        className="widgetProductsList__topMatchRelevance"
+                        aria-label={`Rilevanza ${scoreWidth}%`}
+                      >
+                        <div className="widgetProductsList__topMatchRelevanceHeader">
+                          <span>Rilevanza</span>
+                          <span>Score {formatSemanticScore(score)}</span>
+                        </div>
+                        <div className="widgetProductsList__topMatchRelevanceTrack">
+                          <div
+                            className="widgetProductsList__topMatchRelevanceFill"
+                            style={{ width: `${scoreWidth}%` }}
+                          />
+                        </div>
+                      </div>
+                      {reasons.length > 0 && (
+                        <span className="widgetProductsList__topMatchReasons">
+                          {reasons.join(" · ")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       )}
       <div className="widgetProductsList__scrollerAnchor">
         <div ref={productListHeaderRef}></div>
