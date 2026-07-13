@@ -3078,6 +3078,8 @@ Nota importante:
 
 - questo non e' un modello embedding
 - e' un modello di query understanding / query rewrite
+- libreria candidata da usare: `Vercel AI SDK`
+- il modello andra' usato per produrre output strutturato, non per generare vettori
 
 Sotto-task aggiunto:
 
@@ -3168,6 +3170,35 @@ Costo:
 
 Per questo resta l'ultimo task.
 
+### Task svolto - Auto popolamento filtri avanzati da query semantica
+
+La query libera della ricerca semantica ora prova a popolare automaticamente i filtri della ricerca avanzata quando riconosce vincoli espliciti.
+
+Implementazione attuale:
+
+- logica rule-based nel FE, in attesa del futuro modello di query understanding
+- debounce di 500ms mentre l'utente scrive
+- applicazione immediata anche al submit della ricerca semantica
+- merge conservativo con i filtri gia' presenti: vengono aggiornati solo i campi popolati automaticamente
+- log in console con filtri inferiti e regole che hanno attivato il mapping
+
+Campi riconosciuti:
+
+- `riskKiid`: rischio basso/medio/alto o SRRI/KIID/KID esplicito
+- `currency`: EUR/USD
+- `productType`: Fondo quando la query contiene fondo/fondi
+- `sustainable`
+- `ecoSustainable`
+- `pai`
+- `coupon`
+- `bestInClass`
+- `isPlaced`
+
+Nota:
+
+- per ora il mapping e' intenzionalmente semplice e trasparente
+- il futuro task con `Vercel AI SDK` potra' sostituire questa parte con interpretazione strutturata della query
+- alcune categorie tematiche come automotive/pharma restano nel ranking semantico, non nei filtri avanzati, perche' non esistono ancora campi filtro dedicati
 
 ### Task rimossi / non prioritari
 

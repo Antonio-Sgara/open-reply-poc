@@ -97,6 +97,221 @@ const cleanAdvancedFilterPayload = (payload: IFiltersDTO) => {
   );
 };
 
+const getBroadAdvancedSearchFilters = () => {
+  const filters = getAdvancedSearchInitialState(advancedProductSearchModel());
+  (filters as any).isPlaced = [""];
+  return filters;
+};
+
+const normalizeQueryForFilters = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const queryHasAny = (query: string, terms: string[]) =>
+  terms.some(term => query.includes(term));
+
+const queryHasNegativeIntent = (query: string, terms: string[]) =>
+  terms.some(
+    term =>
+      query.includes(`senza ${term}`) ||
+      query.includes(`non ${term}`) ||
+      query.includes(`no ${term}`) ||
+      query.includes(`escludi ${term}`) ||
+      query.includes(`esclusi ${term}`) ||
+      query.includes(`escluse ${term}`)
+  );
+
+const setInferredFilter = (
+  inferredFilters: AdvancedSearchPanelFilterProps,
+  matchedRules: string[],
+  filterId: string,
+  value: string,
+  reason: string
+) => {
+  inferredFilters[filterId] = [value];
+  matchedRules.push(reason);
+};
+
+const inferAdvancedFiltersFromSemanticQuery = (query: string) => {
+  const normalizedQuery = normalizeQueryForFilters(query);
+  const inferredFilters: AdvancedSearchPanelFilterProps = {};
+  const matchedRules: string[] = [];
+
+  if (!normalizedQuery) {
+    return { inferredFilters, matchedRules };
+  }
+
+  const exactRiskMatch = normalizedQuery.match(
+    /\b(?:kiid|kid|srri|rischio)\s*(\d)\b/
+  );
+
+  if (exactRiskMatch) {
+    setInferredFilter(
+      inferredFilters,
+      matchedRules,
+      "riskKiid",
+      exactRiskMatch[1],
+      `SRRI ${exactRiskMatch[1]}`
+    );
+  } else if (
+    queryHasAny(normalizedQuery, [
+      "rischio basso",
+      "kiid basso",
+      "kid basso",
+      "srri basso",
+      "prudente",
+      "prudenti",
+      "difensivo",
+      "difensivi",
+      "conservativo",
+      "conservativi"
+    ])
+  ) {
+    setInferredFilter(
+      inferredFilters,
+      matchedRules,
+      "riskKiid",
+      "2",
+      "rischio basso -> SRRI 2"
+    );
+  } else if (
+    queryHasAny(normalizedQuery, [
+      "rischio medio",
+      "kiid medio",
+      "kid medio",
+      "srri medio",
+      "bilanciato",
+      "bilanciati"
+    ])
+  ) {
+    setInferredFilter(
+      inferredFilters,
+      matchedRules,
+      "riskKiid",
+      "4",
+      "rischio medio -> SRRI 4"
+    );
+  } else if (
+    queryHasAny(normalizedQuery, [
+      "rischio alto",
+      "kiid alto",
+      "kid alto",
+      "srri alto",
+      "dinamico",
+      "dinamici",
+      "aggressivo",
+      "aggressivi"
+    ])
+  ) {
+    setInferredFilter(
+      inferredFilters,
+      matchedRules,
+      "riskKiid",
+      "6",
+      "rischio alto -> SRRI 6"
+    );
+  }
+
+  if (queryHasAny(normalizedQuery, ["euro", "eur"])) {
+    setInferredFilter(inferredFilters, matchedRules, "currency", "EUR", "valuta EUR");
+  } else if (queryHasAny(normalizedQuery, ["dollaro", "dollari", "usd"])) {
+    setInferredFilter(inferredFilters, matchedRules, "currency", "USD", "valuta USD");
+  }
+
+  if (queryHasAny(normalizedQuery, ["fondo", "fondi"])) {
+    setInferredFilter(
+      inferredFilters,
+      matchedRules,
+      "productType",
+      productTypes.FUND,
+      "tipologia Fondo"
+    );
+  }
+
+  const booleanRules = [
+    {
+      filterId: "sustainable",
+      positiveTerms: ["sostenibile", "sostenibili", "esg"],
+      negativeTerms: ["sostenibile", "sostenibili", "esg"],
+      label: "sostenibile"
+    },
+    {
+      filterId: "ecoSustainable",
+      positiveTerms: [
+        "eco",
+        "ecosostenibile",
+        "eco sostenibile",
+        "ecosostenibili",
+        "eco sostenibili"
+      ],
+      negativeTerms: [
+        "eco",
+        "ecosostenibile",
+        "eco sostenibile",
+        "ecosostenibili",
+        "eco sostenibili"
+      ],
+      label: "eco-sostenibile"
+    },
+    {
+      filterId: "pai",
+      positiveTerms: ["pai"],
+      negativeTerms: ["pai"],
+      label: "PAI"
+    },
+    {
+      filterId: "coupon",
+      positiveTerms: ["cedola", "cedole", "cedolare", "distribuzione"],
+      negativeTerms: ["cedola", "cedole", "cedolare", "distribuzione"],
+      label: "cedola"
+    },
+    {
+      filterId: "bestInClass",
+      positiveTerms: ["bic", "best in class"],
+      negativeTerms: ["bic", "best in class"],
+      label: "BIC"
+    },
+    {
+      filterId: "isPlaced",
+      positiveTerms: ["collocato", "collocati", "collocamento"],
+      negativeTerms: ["collocato", "collocati", "collocamento"],
+      label: "collocamento"
+    }
+  ];
+
+  booleanRules.forEach(rule => {
+    const asksPositive = queryHasAny(normalizedQuery, rule.positiveTerms);
+    const asksNegative = queryHasNegativeIntent(normalizedQuery, rule.negativeTerms);
+
+    if (asksNegative) {
+      setInferredFilter(
+        inferredFilters,
+        matchedRules,
+        rule.filterId,
+        "false",
+        `${rule.label}: No`
+      );
+      return;
+    }
+
+    if (asksPositive) {
+      setInferredFilter(
+        inferredFilters,
+        matchedRules,
+        rule.filterId,
+        "true",
+        `${rule.label}: Si`
+      );
+    }
+  });
+
+  return { inferredFilters, matchedRules };
+};
+
 export interface FilterDTOParsingOptions {
   isSorting?: boolean;
   forceApply?: boolean;
@@ -142,6 +357,8 @@ const WidgetProductsList: FC<IProps> = ({
   const [pastMonthLastDay, setPastMonthLastDay] = useState("");
   const [pocApiProducts, setPocApiProducts] = useState<any[]>([]);
   const generatedEmbeddingSaveCountRef = React.useRef(0);
+  const autoPopulatedFilterIdsRef = React.useRef<string[]>([]);
+  const lastAutoFilterSignatureRef = React.useRef("");
   const semanticDatasetProducts = useMemo(
     () => (pocApiProducts.length > 0 ? pocApiProducts : []),
     [pocApiProducts]
@@ -534,6 +751,59 @@ const WidgetProductsList: FC<IProps> = ({
     [activeFilters, prodFilter]
   );
 
+  const applySemanticQueryFilters = useCallback(
+    (query: string) => {
+      if (!query.trim() && autoPopulatedFilterIdsRef.current.length === 0) {
+        return;
+      }
+
+      const { inferredFilters, matchedRules } =
+        inferAdvancedFiltersFromSemanticQuery(query);
+      const inferredFilterIds = Object.keys(inferredFilters);
+      const signature = JSON.stringify({
+        query: normalizeQueryForFilters(query),
+        inferredFilters
+      });
+
+      if (signature === lastAutoFilterSignatureRef.current) {
+        return;
+      }
+      lastAutoFilterSignatureRef.current = signature;
+
+      const nextActiveFilters = { ...activeFilters } as any;
+      autoPopulatedFilterIdsRef.current.forEach(filterId => {
+        nextActiveFilters[filterId] = [];
+      });
+
+      inferredFilterIds.forEach(filterId => {
+        nextActiveFilters[filterId] = inferredFilters[filterId];
+      });
+
+      autoPopulatedFilterIdsRef.current = inferredFilterIds;
+
+      if (inferredFilterIds.length === 0) {
+        semanticDebugLog("Query semantica senza filtri avanzati riconosciuti", {
+          query
+        });
+      } else {
+        semanticDebugGroup("Filtri avanzati popolati dalla query semantica", () => {
+          console.log("query", query);
+          console.table(
+            inferredFilterIds.map(filterId => ({
+              filterId,
+              value: inferredFilters[filterId]?.join(", ")
+            }))
+          );
+          console.log("matchedRules", matchedRules);
+        });
+      }
+
+      setActiveFilters(nextActiveFilters);
+      reloadOptionsBasedOnFilters(nextActiveFilters, undefined, true);
+    },
+    [activeFilters]
+  );
+
   const parsedFilterRequestDTO = (
     options: FilterDTOParsingOptions = {
       isSorting: false,
@@ -684,14 +954,19 @@ const WidgetProductsList: FC<IProps> = ({
 
   const reloadOptionsBasedOnFilters = (
     filters?: AdvancedSearchPanelFilterProps,
-    filterIdToKeep?: string
+    filterIdToKeep?: string,
+    keepBroadOptions = false
   ) => {
     setIsLoadingOptions(true);
     const parsedFilters = cleanAdvancedFilterPayload(
-      parsedFilterRequestDTO({ flatten: false, filters })
+      parsedFilterRequestDTO({
+        flatten: false,
+        filters: keepBroadOptions ? getBroadAdvancedSearchFilters() : filters
+      })
     );
     semanticDebugLog("Ricaricamento opzioni ricerca avanzata", {
       filterIdToKeep,
+      keepBroadOptions,
       parsedFilters
     });
     const advancedProductFilterPromise = getAdvancedProductFilter(parsedFilters);
@@ -722,6 +997,16 @@ const WidgetProductsList: FC<IProps> = ({
         setIsLoadingOptions(false);
       });
   };
+
+  useEffect(() => {
+    if (isShowingSecondary) return;
+
+    const timeout = window.setTimeout(() => {
+      applySemanticQueryFilters(semanticQuery);
+    }, 500);
+
+    return () => window.clearTimeout(timeout);
+  }, [semanticQuery, isShowingSecondary, applySemanticQueryFilters]);
 
   const handleApplyAdvancedFilter = () => {
     setIsAdvancedSearchPerformed(true);
@@ -919,6 +1204,7 @@ const WidgetProductsList: FC<IProps> = ({
               loadedTableProducts: products?.length ?? 0,
               semanticDatasetProducts: semanticDatasetProducts.length
             });
+            applySemanticQueryFilters(semanticQuery);
             searchSemantically();
           }}
         >

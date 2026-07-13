@@ -78,8 +78,18 @@
     border-left-color: rgba(38, 77, 122, 0.65);
   }
 
+  &--2 .listProductsTd__semanticBadge {
+    background: rgba(38, 77, 122, 0.12);
+    color: $color-blu-dark;
+  }
+
   &--3 td:first-child {
-    border-left-color: rgba(38, 77, 122, 0.45);
+    border-left-color: $color-green;
+  }
+
+  &--3 .listProductsTd__semanticBadge {
+    background: rgba(105, 188, 69, 0.16);
+    color: $color-green;
   }
 }
 
