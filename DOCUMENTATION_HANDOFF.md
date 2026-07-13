@@ -4,9 +4,9 @@ Questa guida spiega **cos'è questo progetto** e **come funziona**, scritta per
 una persona che non l'ha mai visto e non è per forza esperta. Niente parole
 difficili: dove serve un termine tecnico, lo spieghiamo subito.
 
-> C'è anche un altro documento, [`SEMANTIC_SEARCH_POC_HANDOFF.md`](./SEMANTIC_SEARCH_POC_HANDOFF.md),
-> che racconta l'**idea** e l'**utilità** della ricerca semantica. Questo file invece
-> spiega **com'è fatto dentro** e **dove mettere le mani**.
+> C'è anche un altro documento, [`SEMANTIC_SEARCH_POC_HANDOFF.md`](./SEMANTIC_SEARCH_POC_HANDOFF.md):
+> è il **diario tecnico** della POC, dove sono annotate tutte le decisioni prese e le
+> cose ancora da fare. Questa guida invece serve a **capire il progetto in fretta**.
 
 ---
 
@@ -29,162 +29,200 @@ a quella della piattaforma reale di una banca.
 
 ---
 
-## 2. Cosa serve per farlo partire sul tuo computer
+## 2. Le due parti del progetto
+
+Il progetto è fatto di **due programmi che lavorano insieme**:
+
+| Parte | Cos'è | Dove sta |
+|---|---|---|
+| **Frontend** | Quello che vedi: le pagine, la barra di ricerca, la tabella dei prodotti. È anche il posto dove gira l'intelligenza artificiale che capisce le frasi. | cartella `src/` |
+| **Backend** ("il serverino") | Un piccolo programma che tiene l'elenco dei prodotti e si ricorda i calcoli già fatti, così la demo non deve rifarli ogni volta. | cartella `server/` |
+
+Non è obbligatorio avere entrambi: se il serverino non è acceso, la demo funziona
+lo stesso usando un elenco di prodotti salvato in un file (ma con meno prodotti).
+
+---
+
+## 3. Come farlo partire sul tuo computer
 
 Serve avere installato **Node.js** (versione 22). Node è il programma che fa girare
 tutto questo codice.
 
-Poi apri il terminale dentro la cartella del progetto e scrivi, una riga alla volta:
+Apri il terminale nella cartella del progetto:
 
 ```bash
-npm install     # scarica tutti i pezzi di cui il progetto ha bisogno (si fa una volta sola)
-npm run dev     # avvia la demo
+npm install      # scarica i pezzi di cui il progetto ha bisogno (si fa una volta sola)
+npm run dev:all  # avvia insieme il serverino e la demo
 ```
 
-Dopo `npm run dev`, il terminale ti dà un indirizzo (tipo `http://localhost:5173`).
-Aprilo nel browser e vedi la demo.
+Poi apri nel browser l'indirizzo che ti stampa il terminale (tipo `http://localhost:5173`).
+Per fermare tutto: `Ctrl + C`.
 
-Per fermarla: nel terminale premi `Ctrl + C`.
+Se preferisci avviarli separati, in due terminali:
 
-> **La prima ricerca può essere lenta.** La demo usa un piccolo modello di
-> intelligenza artificiale che viene **scaricato dal browser la prima volta** (serve
-> quindi una connessione a internet al primo avvio). Dopo che è stato scaricato,
-> resta in memoria e le ricerche diventano veloci. Se per qualche motivo non riesce
-> a scaricarlo, la demo continua comunque a funzionare con un metodo più semplice
-> di riserva (vedi §4).
+```bash
+npm run api   # solo il serverino  (risponde su http://127.0.0.1:3001)
+npm run dev   # solo la demo (il frontend)
+```
 
-Altri comandi che puoi vedere in giro (non servono per la demo di tutti i giorni):
+> **Il primo avvio è lento, è normale.** Succedono due cose una volta sola:
+> 1. il browser **scarica un piccolo modello di intelligenza artificiale** (serve
+>    internet la prima volta);
+> 2. la demo **trasforma tutti i prodotti in numeri** (vedi §5) — sono oltre 1500,
+>    quindi ci mette un po'.
+>
+> Questi calcoli vengono **salvati dal serverino**, così dalla volta dopo la pagina
+> parte molto più veloce. Se il modello non riesce a scaricarsi, la demo continua
+> comunque a funzionare con un metodo di riserva più semplice.
+
+Altri comandi che puoi incontrare (non servono tutti i giorni):
 
 | Comando | A cosa serve |
 |---|---|
-| `npm run build` | Prepara la versione "definitiva" pronta da pubblicare online |
+| `npm run build` | Prepara la versione "definitiva" pronta da pubblicare |
 | `npm run lint` | Controlla che il codice sia scritto in modo pulito |
-| `npm run typecheck` | Controlla che non ci siano errori di tipo nel codice |
+| `npm run typecheck` | Controlla che non ci siano errori nel codice |
 
 ---
 
-## 3. Come è organizzato il progetto
+## 4. Come è organizzato il progetto
 
-Quando apri la cartella vedi tanti file. Quelli che contano per capire sono pochi.
-Tutto il codice vero sta nella cartella **`src`** ("source", cioè "sorgente").
+Le parti che contano davvero sono poche.
 
-Le parti più importanti dentro `src`:
+**Nel frontend (`src/`):**
 
 | Cartella / file | Cos'è, detto semplice |
 |---|---|
-| **`semantic-search/`** | **Il cuore della demo.** Qui c'è il "cervello" che capisce le frasi e trova i prodotti giusti. È la parte interessante. |
-| `products.json` | L'elenco dei prodotti finti su cui si cerca (circa 500 fondi). È come un piccolo "database" salvato in un file. |
-| `pages/` | Le pagine che vedi a schermo (home, prodotti, profilo...). |
-| `components/` | I "pezzi" riutilizzabili di interfaccia: pulsanti, tabelle, barre di ricerca, ecc. (come i mattoncini Lego con cui sono fatte le pagine). |
-| `store/` | La "memoria" dell'app: dove vengono tenuti i dati mentre la usi. |
-| `styles/`, `assets/` | L'aspetto grafico: colori, font, icone, immagini. |
+| **`semantic-search/`** | **Il cuore della demo.** Il "cervello" che capisce le frasi e trova i prodotti giusti. |
+| `components/widget/WidgetProductList/` | La pagina del catalogo: barra di ricerca, tabella prodotti, box dei risultati migliori. |
+| `products.json` | Un elenco di ~509 prodotti salvato in un file. Serve come **riserva**, se il serverino non è acceso. |
+| `pages/` | Le pagine che vedi (home, prodotti, dettaglio prodotto, profilo). |
+| `components/` | I "pezzi" riutilizzabili: pulsanti, tabelle, grafici (come mattoncini Lego). |
+| `store/` | La "memoria" dell'app mentre la usi. |
+| `styles/`, `assets/` | Colori, font, icone, immagini. |
 
-Le altre cartelle sono dettagli tecnici: per capire la demo puoi ignorarle all'inizio.
+**Nel backend (`server/`):**
+
+| File | Cos'è |
+|---|---|
+| `index.js` | Il serverino vero e proprio: risponde alle richieste del frontend. |
+| `data/products-base.json` | 509 fondi. |
+| `data/products-extra.json` | 1000 prodotti in più (anche azioni di aziende, es. Tesla). |
+| `data/*.sqlite` / `*.db` | L'archivio dove il serverino **si ricorda i calcoli già fatti** sui prodotti. |
+
+In totale il serverino mette a disposizione **circa 1500 prodotti**.
 
 ---
 
-## 4. Come funziona la ricerca semantica (il pezzo importante)
+## 5. Come funziona la ricerca semantica (il pezzo importante)
 
-Questa è la parte da capire bene. La spieghiamo passo passo, con un'immagine mentale.
-
-**Il problema:** il computer non capisce le parole come noi. Allora dobbiamo
-trasformare sia i prodotti sia la tua frase in **numeri**, e poi confrontare i numeri.
+**Il problema:** il computer non capisce le parole come noi. Allora si trasformano
+sia i prodotti sia la tua frase in **numeri**, e poi si confrontano i numeri.
 
 Funziona così:
 
 1. **Ogni prodotto viene "descritto" con una frase.**
-   Per esempio un fondo diventa: *"Nome: ... Valuta: euro. Rischio basso. Sostenibile: sì..."*.
+   Per esempio: *"Nome: ... Valuta: euro. Rischio basso. Sostenibile: sì..."*.
 
 2. **Quella frase viene trasformata in una lista di numeri** (si chiama *embedding*:
-   pensalo come una specie di "impronta digitale" fatta di numeri che rappresenta il
-   significato della frase). A trasformare le frasi in numeri ci pensa un **modello
-   di intelligenza artificiale** vero e proprio (un modello "leggero" e multilingue,
-   capace di capire l'italiano), che gira direttamente nel browser.
+   pensalo come un'"impronta digitale" fatta di numeri che rappresenta il significato).
+   A farlo è un **vero modello di intelligenza artificiale** (leggero e multilingue,
+   quindi capisce l'italiano) che gira **dentro il browser**, senza mandare niente a
+   servizi esterni.
 
-3. **Anche la tua frase di ricerca** viene trasformata nella stessa lista di numeri.
+3. **Anche la tua frase di ricerca** viene trasformata nello stesso tipo di numeri.
 
-4. **Si confrontano i numeri** della tua ricerca con quelli di ogni prodotto: più
-   sono simili, più il prodotto è adatto.
+4. **Si confrontano i numeri:** più l'"impronta" della tua frase somiglia a quella di
+   un prodotto, più quel prodotto è adatto.
 
 5. **Si ordinano i prodotti** dal più adatto al meno adatto e si mostrano i primi.
 
-In più c'è una piccola "intelligenza extra": il sistema riconosce parole chiave come
-*rischio basso*, *cedola*, *sostenibile*, *euro*, *senza...* e dà una spinta (o una
-penalità) ai prodotti giusti. Così se scrivi *"senza cedola"* evita i prodotti con
-cedola.
+In più c'è un'**intelligenza extra a regole**: il sistema riconosce parole come
+*rischio basso*, *cedola*, *sostenibile*, *euro*, e anche i "no" (*senza cedola*,
+*non sostenibili*), e sposta i prodotti giusti più in alto (o li penalizza).
 
-**Due cose importanti da sapere:**
+### Le tre cose importanti da ricordare
 
-- **Usa una vera intelligenza artificiale.** Il modello (si chiama
-  *paraphrase-multilingual-MiniLM*) viene scaricato e fatto girare dentro il browser,
-  senza inviare niente a server esterni. È "leggero" apposta per poter funzionare sul
-  computer dell'utente.
-- **C'è un metodo di riserva.** Se il modello non si riesce a scaricare o a far
-  partire (per esempio senza internet), la demo passa automaticamente a un metodo più
-  semplice e "fatto in casa", così non si blocca mai. I risultati sono meno precisi,
-  ma la ricerca continua a funzionare.
+- **I calcoli vengono riusati.** Trasformare 1500 prodotti in numeri è lento, quindi
+  il risultato viene **salvato dal serverino**. Alla riapertura della pagina non si
+  rifà tutto da capo: si ricalcola solo la tua frase di ricerca.
+- **C'è sempre un piano B.** Se il modello di AI non parte (per esempio senza
+  internet), la demo usa un metodo di riserva più semplice: i risultati sono meno
+  precisi, ma non si blocca. Allo stesso modo, se il serverino non è acceso, usa i
+  prodotti del file `products.json`.
+- **Sa anche cercare "prodotti simili".** Se scrivi *"fondi simili a AT0000712716"*
+  (oppure a un nome), cerca il prodotto di partenza e mostra quelli che gli somigliano.
 
-**Piccola ottimizzazione possibile:** trasformare i prodotti in numeri ogni volta
-costa tempo. Il codice è già pronto per usare numeri **già calcolati in anticipo** e
-salvati insieme ai prodotti (così la demo parte subito). Al momento il file dei
-prodotti non li contiene ancora, quindi vengono calcolati al volo.
-
-### I file dentro `semantic-search/` (se ti serve sapere chi fa cosa)
+### I file dentro `semantic-search/` (chi fa cosa)
 
 | File | Cosa fa |
 |---|---|
 | `buildProductSemanticText.ts` | Trasforma un prodotto nella frase che lo descrive (passo 1). |
-| `embeddingService.ts` | Trasforma una frase nei numeri / "impronta" (passi 2 e 3). Qui dentro c'è il caricamento del modello di AI, la memoria temporanea dei risultati e il metodo di riserva. |
+| `embeddingService.ts` | Trasforma una frase in numeri (passi 2 e 3): carica il modello di AI, tiene i risultati in memoria e gestisce il metodo di riserva. |
 | `similarity.ts` | Confronta due "impronte" e dice quanto si somigliano (passo 4). |
-| `businessRanking.ts` | L'intelligenza extra sulle parole chiave (rischio, cedola, ecc.). |
+| `businessRanking.ts` | L'intelligenza extra a regole (rischio, cedola, sostenibile, "senza..."). |
 | `similarProducts.ts` | Gestisce le ricerche tipo *"prodotti simili a X"*. |
 | `semanticSearch.ts` | Mette tutto in fila e produce il risultato finale. |
 | `useSemanticProductSearch.ts` | Collega tutto questo alla pagina che vedi a schermo. |
-| `debug.ts` | Scrive messaggi di controllo nella console del browser (utile per chi sviluppa). |
+| `debug.ts` | Scrive i messaggi di controllo nella console del browser. |
 
 ---
 
-## 5. Dove appare la ricerca nella pagina
+## 6. Cosa vedi nella pagina Prodotti
 
-La barra di ricerca semantica si trova nella pagina **Prodotti** della demo.
-Il codice che la disegna sta in
+Nella pagina **Prodotti** della demo trovi:
+
+- la **barra di ricerca semantica**: scrivi una frase libera e premi **Cerca**
+  (c'è anche **Reset** per ricominciare);
+- il box **"Top match"**: mette in evidenza i **3 risultati migliori**, con una barra
+  di rilevanza, il punteggio e il motivo per cui sono stati scelti (es. *"rischio
+  basso"*, *"valuta EUR"*);
+- i **filtri avanzati che si compilano da soli**: se scrivi *"fondi in euro a rischio
+  basso"*, la demo prova a spuntare da sola i filtri corrispondenti;
+- la **tabella dei prodotti**, con i primi 3 risultati evidenziati.
+
+Il codice di questa pagina sta in
 [`components/widget/WidgetProductList/WidgetProductList.tsx`](./src/components/widget/WidgetProductList/WidgetProductList.tsx).
 
-C'è una casella di testo dove scrivi la frase (con un esempio già scritto come
-suggerimento), un pulsante **Cerca** e un pulsante **Reset** per ricominciare.
+---
 
-Una nota utile: la ricerca semantica lavora **sui ~500 prodotti del file
-`products.json`**, non sui prodotti che arrivano dal server della banca. Sono due
-ricerche diverse che convivono nella stessa pagina.
+## 7. Cose da sapere per non sbagliare
+
+- **Se la ricerca non trova niente o è lentissima**, controlla che il serverino sia
+  acceso (`npm run api`) e che il browser abbia potuto scaricare il modello.
+- **Per cambiare i prodotti** si lavora nei file dentro `server/data/`
+  (e in `src/products.json`, che è la riserva).
+- **Per cambiare quali parole capisce la ricerca** (sinonimi, regole) si lavora in
+  `embeddingService.ts` e `businessRanking.ts` dentro `semantic-search/`.
+- **C'è una password di test scritta nel codice** (in `src/store/store.ts`) che serve
+  solo a far partire la demo in locale senza login: va tolta prima di usare il
+  progetto sul serio.
+- **I messaggi di "debug"**: la demo scrive molti messaggi nella console del browser
+  per far capire cosa sta facendo. Per una demo "pulita" si spengono mettendo a
+  `false` la riga `SEMANTIC_SEARCH_DEBUG` in `semantic-search/debug.ts`.
+- **File da ignorare** (roba rimasta lì): `src/__MACOSX/`, `README.mdgit`,
+  la cartella `refactored-needs-components/` (non c'entra con la ricerca).
 
 ---
 
-## 6. Le cose da sapere per non sbagliare
+## 8. Cosa manca ancora (in breve)
 
-Poche avvertenze pratiche, scritte semplice:
+Le cose principali che restano da fare (il dettaglio è nel diario tecnico
+[`SEMANTIC_SEARCH_POC_HANDOFF.md`](./SEMANTIC_SEARCH_POC_HANDOFF.md)):
 
-- **Per cambiare i prodotti della demo** modifica il file `src/products.json`.
-- **Per cambiare quali parole capisce la ricerca** (sinonimi, regole) si lavora nei
-  file `embeddingService.ts` e `businessRanking.ts` dentro `semantic-search/`.
-- **C'è una password di test scritta direttamente nel codice** (in
-  `src/store/store.ts`) che serve solo per far partire la demo in locale senza login.
-  Va tolta prima di usare il progetto sul serio.
-- **Alcuni file sono "spazzatura" rimasta lì** e si possono ignorare/cancellare:
-  la cartella `src/__MACOSX/` e il file `README.mdgit` (nome sbagliato).
-- **Il modello di AI si scarica la prima volta**: serve internet al primo avvio e la
-  prima ricerca è più lenta. Se non si scarica, parte il metodo di riserva.
-- **I messaggi di "debug"**: la demo scrive parecchi messaggi nella console del
-  browser per far capire cosa sta facendo. Se vuoi una demo "pulita", si disattivano
-  mettendo a `false` la riga `SEMANTIC_SEARCH_DEBUG` nel file
-  `semantic-search/debug.ts`.
+- far **interpretare la frase da un secondo modello di AI** prima di cercare, per
+  capire meglio richieste complesse (es. *"rendimento alto ma rischio basso"*);
+- migliorare la ricerca di **prodotti simili**, che oggi su alcune azioni dà risultati
+  poco convincenti;
+- **misurare la qualità** dei risultati in modo sistematico.
 
 ---
 
-## 7. Riassunto in 5 righe
+## 9. Riassunto in 6 righe
 
-- È una **demo** di ricerca di fondi scrivendo frasi normali invece che filtri.
-- Il pezzo importante è la cartella **`semantic-search/`**.
-- I prodotti di prova stanno nel file **`products.json`**.
-- Si avvia con **`npm install`** e poi **`npm run dev`**.
-- Il "cervello" usa una **vera AI** che gira nel browser (con un metodo semplice di
-  riserva se non si carica).
+- È una **demo** per cercare prodotti finanziari scrivendo frasi normali.
+- Sono due parti: il **frontend** (`src/`) e un **serverino** (`server/`) con i prodotti.
+- Si avvia con **`npm install`** e poi **`npm run dev:all`**.
+- Il cuore è la cartella **`semantic-search/`**.
+- Usa una **vera AI dentro il browser**, con un metodo di riserva se non parte.
+- Il **primo avvio è lento**, poi i calcoli vengono riusati.
