@@ -2,11 +2,24 @@
 @import "../../styles/mixin";
 
 .AdvancedSearchPanel.sectionWrapper {
+  background-color: #f1f8f6;
   padding: 40px 25px;
   width: 100%;
 
   &.AdvancedSearchPanel--inverted {
     background-color: $color-white;
+  }
+}
+
+.AdvancedSearchPanel input:disabled {
+  background-color: #f2f2f2;
+  border: 1px solid $color-grey-80;
+  color: $color-grey-40;
+  opacity: 1;
+
+  &::placeholder {
+    color: $color-grey-40;
+    opacity: 1;
   }
 }
 
@@ -53,12 +66,12 @@
 }
 
 .advancedSearchPanel__warningInfo {
-  color: #264d7aab;
+  color: rgba(15, 118, 110, 0.67);
   width: 450px;
   font-size: 15px;
   gap: 10px;
   margin-top: 20px;
-  background: #264d7a0a;
+  background: rgba(15, 118, 110, 0.04);
   padding: 10px;
   @include flex-box;
   @include flex-align-items(center);

@@ -30,8 +30,8 @@ const WithLoader: FC<WithLoaderProps> = ({
             width: 16,
             height: 16,
             borderRadius: "50%",
-            border: "2px solid rgba(38, 77, 122, 0.2)",
-            borderTopColor: "#264d7a",
+            border: "2px solid rgba(15, 118, 110, 0.2)",
+            borderTopColor: "#0f766e",
             animation: "withLoaderSpin 0.8s linear infinite"
           }}
           aria-hidden="true"

@@ -102,20 +102,22 @@
 
   .navbar-brand {
     height: 100%;
-    width: 24%;
-    min-width: 24%;
+    width: 174px;
+    min-width: 174px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    padding-left: 18px;
+    padding-right: 2px;
 
     @media screen and (min-width: 1024px) and (max-width: 1300px) {
-      max-width: 18%;
-      min-width: 18%;
+      width: 168px;
+      min-width: 168px;
     }
 
     @media screen and (min-width: 1300px) {
-      max-width: 16%;
-      min-width: 16%;
+      width: 174px;
+      min-width: 174px;
     }
   }
 
@@ -188,12 +190,15 @@
 }
 
 .Header__logo {
-  margin-top: 8px;
+  margin-top: 2px;
   cursor: pointer;
+  width: 154px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .Header__logoText {
-  width: 78px;
+  width: 76px;
   height: 39px;
   font-family: "Roboto Slab";
   font-size: 12px;

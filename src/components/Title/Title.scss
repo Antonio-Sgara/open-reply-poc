@@ -47,7 +47,7 @@
       width: 50px;
       height: 3px;
       border-radius: 2px;
-      background-color: #264d7a;
+      background-color: $color-blu-dark;
       margin-top: 8px;
     }
   }
@@ -70,7 +70,7 @@
   font-style: normal;
   line-height: 1.14;
   letter-spacing: normal;
-  color: #264d7a;
+  color: $color-blu-dark;
   @include break(smTablet, max) {
     font-size: 20px;
   }
@@ -124,7 +124,7 @@
   font-style: normal;
   line-height: normal;
   letter-spacing: normal;
-  color: #264d7a;
+  color: $color-blu-dark;
 }
 
 .TitleFullPage {
@@ -146,7 +146,7 @@
   display: inline-block;
   letter-spacing: normal;
   vertical-align: middle;
-  color: #264d7a;
+  color: $color-blu-dark;
   &.longTitle {
     font-size: 25px;
   }

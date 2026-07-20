@@ -217,18 +217,34 @@ export function productTypeMapper(type: string) {
   }
 }
 
-const getOptionsFromSet = (options: AdvancedFilterForProductDTO | {}, id: string) => {
-  if (Array.isArray((options as any)[id])) {
-    return (options as any)[id].map((key: any) =>
-      typeof key === "boolean"
-        ? { value: key.toString(), label: key ? "Sì" : "No" }
-        : {
-            value: key?.toString(),
-            label: id === "riskKiid" && key === 0 ? "Vuoto" : key
-          }
-    );
-  }
-  return [];
+const getOptionsFromSet = (
+  options: AdvancedFilterForProductDTO | {},
+  id: string,
+  activeFilters?: AdvancedSearchPanelFilterProps
+) => {
+  const availableValues = Array.isArray((options as any)[id])
+    ? (options as any)[id]
+    : [];
+  const selectedValues = Array.isArray(activeFilters?.[id])
+    ? activeFilters?.[id]
+    : [];
+  const uniqueValues = [...availableValues, ...selectedValues].filter(
+    (value, index, values) =>
+      values.findIndex(candidate => String(candidate) === String(value)) === index
+  );
+
+  return uniqueValues.map((key: any) => {
+    const stringKey = key?.toString();
+    const isBoolean =
+      typeof key === "boolean" || stringKey === "true" || stringKey === "false";
+
+    return isBoolean
+      ? { value: stringKey, label: stringKey === "true" ? "Sì" : "No" }
+      : {
+          value: stringKey,
+          label: id === "riskKiid" && Number(key) === 0 ? "Vuoto" : key
+        };
+  });
 };
 
 export const advancedProductSearchModelOptions = (
@@ -242,7 +258,7 @@ export const advancedProductSearchModelOptions = (
     {
       id: "productType",
       label: "TIPOLOGIA PRODOTTO",
-      options: getOptionsFromSet(filterOptions, "productType").map(option => ({
+      options: getOptionsFromSet(filterOptions, "productType", activeFilters).map(option => ({
         value: option.value,
         label: productTypeMapper(String(option.label))
       })),
@@ -252,7 +268,11 @@ export const advancedProductSearchModelOptions = (
     {
       id: "commercialAssetFirstLevel",
       label: "ASSET CLASS I° LIVELLO",
-      options: getOptionsFromSet(filterOptions, "commercialAssetFirstLevel"),
+      options: getOptionsFromSet(
+        filterOptions,
+        "commercialAssetFirstLevel",
+        activeFilters
+      ),
       isMultiselect: true
     },
     {
@@ -260,7 +280,11 @@ export const advancedProductSearchModelOptions = (
       label: "ASSET CLASS II° LIVELLO",
       options:
         activeFilters["commercialAssetFirstLevel"]?.length > 0
-          ? getOptionsFromSet(filterOptions, "commercialAssetSecondLevel")
+          ? getOptionsFromSet(
+              filterOptions,
+              "commercialAssetSecondLevel",
+              activeFilters
+            )
           : [],
       isMultiselect: true,
       disabled:
@@ -272,7 +296,11 @@ export const advancedProductSearchModelOptions = (
       label: "ASSET CLASS III° LIVELLO",
       options:
         activeFilters["commercialAssetSecondLevel"]?.length > 0
-          ? getOptionsFromSet(filterOptions, "commercialAssetThirdLevel")
+          ? getOptionsFromSet(
+              filterOptions,
+              "commercialAssetThirdLevel",
+              activeFilters
+            )
           : [],
       isMultiselect: true,
       disabled:
@@ -282,7 +310,7 @@ export const advancedProductSearchModelOptions = (
     {
       id: "managementCompany",
       label: "SOCIETA/COMPAGNIA",
-      options: getOptionsFromSet(filterOptions, "managementCompany"),
+      options: getOptionsFromSet(filterOptions, "managementCompany", activeFilters),
       type: AdvancedSearchPanelModelTypes.ASYNC_SELECT,
       placeholder: "Cerca per nome...",
       isMultiselect: true,
@@ -292,52 +320,52 @@ export const advancedProductSearchModelOptions = (
     {
       id: "currency",
       label: "DIVISA",
-      options: getOptionsFromSet(filterOptions, "currency"),
+      options: getOptionsFromSet(filterOptions, "currency", activeFilters),
       isMultiselect: false
     },
     {
       id: "bestInClass",
       label: "BIC",
-      options: getOptionsFromSet(filterOptions, "bestInClass")
+      options: getOptionsFromSet(filterOptions, "bestInClass", activeFilters)
     },
     !isProposal
       ? {
           id: "ecoSustainable",
           label: "ECO-SOSTENIBILE",
-          options: getOptionsFromSet(filterOptions, "ecoSustainable")
+          options: getOptionsFromSet(filterOptions, "ecoSustainable", activeFilters)
         }
       : null,
     !isProposal
       ? {
           id: "sustainable",
           label: "SOSTENIBILE",
-          options: getOptionsFromSet(filterOptions, "sustainable")
+          options: getOptionsFromSet(filterOptions, "sustainable", activeFilters)
         }
       : null,
     !isProposal
       ? {
           id: "pai",
           label: "PAI",
-          options: getOptionsFromSet(filterOptions, "pai")
+          options: getOptionsFromSet(filterOptions, "pai", activeFilters)
         }
       : null,
     {
       id: "coupon",
       label: "CEDOLA",
-      options: getOptionsFromSet(filterOptions, "coupon")
+      options: getOptionsFromSet(filterOptions, "coupon", activeFilters)
     },
     !isProposal
       ? {
           id: "riskKiid",
           label: "SRRI",
-          options: getOptionsFromSet(filterOptions, "riskKiid")
+          options: getOptionsFromSet(filterOptions, "riskKiid", activeFilters)
         }
       : null,
     !isProposal
       ? {
           id: "isPlaced",
           label: "COLLOCAMENTO",
-          options: getOptionsFromSet(filterOptions, "isPlaced"),
+          options: getOptionsFromSet(filterOptions, "isPlaced", activeFilters),
           defaultValues: ["true"]
         }
       : null

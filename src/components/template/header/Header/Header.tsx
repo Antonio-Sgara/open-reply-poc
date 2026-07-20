@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { FC, Fragment, useCallback, useEffect, useState } from "react";
 import { Container, Nav, Navbar, Row } from "react-bootstrap";
-import logo from "assets/BCC-logo.png";
+import logo from "assets/semantic-search-logo.svg";
 import Button from "components/Button";
 import ModalContainer, {
   ModalSize
@@ -307,19 +307,11 @@ const Header: FC<IProps> = props => {
                     >
                       <img
                         src={logo}
-                        alt=""
-                        width={95}
+                        alt="Semantic Search POC"
+                        width={154}
                         height={32}
                         className={"Header__logo"}
                       />
-                      <div className={"Header__Line"} />
-                      <h3 className={"Header__logoText"}>
-                        Wealth
-                        <br />
-                        Management
-                        <br />
-                        Platform
-                      </h3>
                     </Row>
                   </Navbar.Brand>
                   <Navbar.Collapse>
@@ -351,19 +343,11 @@ const Header: FC<IProps> = props => {
                               >
                                 <img
                                   src={logo}
-                                  alt=""
-                                  width={95}
+                                  alt="Semantic Search POC"
+                                  width={154}
                                   height={32}
                                   className={"Header__logo"}
                                 />
-                                <div className={"Header__Line"} />
-                                <h3 className={"Header__logoText"}>
-                                  Wealth
-                                  <br />
-                                  Management
-                                  <br />
-                                  Platform
-                                </h3>
                               </Row>
                             </Row>
                             {navOptions.map(

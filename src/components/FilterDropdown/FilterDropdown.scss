@@ -2,7 +2,7 @@
 @import "../../styles/mixin";
 
 .dropdown-toggle.btn.btn-secondary.filterToggleDropdown__toggle {
-  background-color: #264d7a;
+  background-color: $color-blu-dark;
   border-radius: 5px;
   color: $color-white;
   font-size: 14px;
@@ -19,7 +19,7 @@
   &:active,
   &:hover,
   &:focus {
-    background-color: #264d7a;
+    background-color: $color-blu-dark;
     opacity: 0.9;
   }
 

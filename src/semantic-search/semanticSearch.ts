@@ -5,6 +5,11 @@ import { embedText } from "./embeddingService";
 import { cosineSimilarity } from "./similarity";
 import { resolveSimilarProductsIntent } from "./similarProducts";
 import {
+  DEFAULT_EMBEDDING_MODEL_KEY,
+  EmbeddingModelKey,
+  getEmbeddingModel
+} from "./embeddingModels";
+import {
   SemanticProductIndexItem,
   SemanticProductSearchResult,
   SemanticProductSource
@@ -88,6 +93,7 @@ export const buildSemanticIndex = async <TProduct extends SemanticProductSource>
   options: {
     batchSize?: number;
     batchPauseMs?: number;
+    modelKey?: EmbeddingModelKey;
     onEmbeddingGenerated?: (payload: {
       product: TProduct;
       semanticText: string;
@@ -97,6 +103,8 @@ export const buildSemanticIndex = async <TProduct extends SemanticProductSource>
 ): Promise<SemanticProductIndexItem<TProduct>[]> => {
   const batchSize = options.batchSize ?? DEFAULT_INDEX_BATCH_SIZE;
   const batchPauseMs = options.batchPauseMs ?? DEFAULT_INDEX_BATCH_PAUSE_MS;
+  const modelKey = options.modelKey ?? DEFAULT_EMBEDDING_MODEL_KEY;
+  const model = getEmbeddingModel(modelKey);
   const precomputedEmbeddings = products.filter(product =>
     Array.isArray(product.semanticEmbedding)
   ).length;
@@ -109,6 +117,8 @@ export const buildSemanticIndex = async <TProduct extends SemanticProductSource>
         : "Transformers.js FE: generazione embedding mancanti",
     precomputedEmbeddings,
     missingEmbeddings,
+    modelKey,
+    model: model.modelId,
     batchSize,
     batchPauseMs
   });
@@ -117,20 +127,19 @@ export const buildSemanticIndex = async <TProduct extends SemanticProductSource>
   let generatedEmbeddings = 0;
 
   for (const [position, product] of products.entries()) {
-    const {
-      semanticEmbedding,
-      semanticText: precomputedSemanticText,
-      semanticEmbeddingGeneratedAt,
-      semanticEmbeddingModel,
-      semanticEmbeddingModelVersion,
-      ...productWithoutEmbedding
-    } = product;
+    const { semanticEmbedding, semanticText: precomputedSemanticText } = product;
+    const productWithoutEmbedding = { ...product };
+    delete productWithoutEmbedding.semanticEmbedding;
+    delete productWithoutEmbedding.semanticText;
+    delete productWithoutEmbedding.semanticEmbeddingGeneratedAt;
+    delete productWithoutEmbedding.semanticEmbeddingModel;
+    delete productWithoutEmbedding.semanticEmbeddingModelVersion;
     const semanticText =
       precomputedSemanticText ?? buildProductSemanticText(product);
     const hasPrecomputedEmbedding = Array.isArray(semanticEmbedding);
     const embedding = hasPrecomputedEmbedding
       ? semanticEmbedding
-      : await embedText(semanticText);
+      : await embedText(semanticText, { modelKey, purpose: "document" });
 
     if (!hasPrecomputedEmbedding) {
       generatedEmbeddings += 1;
@@ -145,7 +154,7 @@ export const buildSemanticIndex = async <TProduct extends SemanticProductSource>
       productId: `${product.productId ?? product.isin ?? product.name ?? ""}`,
       semanticText,
       embedding,
-      product: productWithoutEmbedding as TProduct
+      product: productWithoutEmbedding
     });
 
     const indexedProducts = position + 1;
@@ -204,12 +213,19 @@ export const searchProductsByMeaning = async <
 >(
   query: string,
   index: SemanticProductIndexItem<TProduct>[],
-  limit = 20
+  limit = 20,
+  options: { modelKey?: EmbeddingModelKey } = {}
 ): Promise<SemanticProductSearchResult<TProduct>[]> => {
   const normalizedQuery = query.trim();
   if (!normalizedQuery) return [];
+  const modelKey = options.modelKey ?? DEFAULT_EMBEDDING_MODEL_KEY;
+  const model = getEmbeddingModel(modelKey);
 
-  semanticDebugLog("Query utente ricevuta", normalizedQuery);
+  semanticDebugLog("Query utente ricevuta", {
+    query: normalizedQuery,
+    modelKey,
+    model: model.modelId
+  });
 
   const similarProductsIntent = resolveSimilarProductsIntent(
     normalizedQuery,
@@ -285,7 +301,10 @@ export const searchProductsByMeaning = async <
     return similarResults;
   }
 
-  const queryEmbedding = await embedText(normalizedQuery);
+  const queryEmbedding = await embedText(normalizedQuery, {
+    modelKey,
+    purpose: "query"
+  });
 
   const scoredResults = index
     .map(indexItem => {

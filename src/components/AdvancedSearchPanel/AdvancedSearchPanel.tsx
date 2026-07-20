@@ -128,6 +128,14 @@ const AdvancedSearchPanel: React.FC<AdvancedSearchPanelProps> = ({
   const [isFiltersChanged, toggleFiltersChanged] = React.useState(
     defaultFiltersChanged
   );
+  const previousFiltersRef = React.useRef(filters);
+
+  React.useEffect(() => {
+    if (previousFiltersRef.current !== filters) {
+      previousFiltersRef.current = filters;
+      toggleFiltersChanged(true);
+    }
+  }, [filters]);
 
   const [isAsyncSelectPristine, setIsAsyncSelectPristine] = React.useState(
     true
@@ -514,7 +522,7 @@ const AdvancedSearchPanel: React.FC<AdvancedSearchPanelProps> = ({
             primary
             center
             disabled={
-              !isFiltersChanged || isLoadingOptions || disableApplyButton
+              !isFiltersChanged || disableApplyButton
             }
             onClick={handleApply}
           />

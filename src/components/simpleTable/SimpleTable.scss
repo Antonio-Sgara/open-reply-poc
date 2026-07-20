@@ -2,7 +2,7 @@
 @import "../../styles/mixin";
 
 .SimpleTable__title {
-  color: rgb(38, 77, 122);
+  color: $color-blu-dark;
 
   &.centered {
     text-align: center;
@@ -20,7 +20,7 @@
   margin-left: 10px;
   font-size: 1rem;
   font-weight: 500;
-  color: rgba(38, 77, 122, 0.5);
+  color: rgba(15, 118, 110, 0.5);
 }
 
 .simpleTable__columnNames {

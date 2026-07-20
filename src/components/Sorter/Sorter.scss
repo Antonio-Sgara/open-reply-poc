@@ -1,3 +1,5 @@
+@import "../../styles/variables";
+
 .sorter {
   display: inline-block;
   vertical-align: middle;
@@ -55,7 +57,7 @@
 
 .sorter__button {
   font-size: 8px;
-  color: #264d7a;
+  color: $color-blu-dark;
   height: 4px;
   width: 9px;
   display: inline-block;

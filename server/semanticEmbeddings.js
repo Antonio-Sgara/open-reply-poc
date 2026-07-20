@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 
-export const EMBEDDING_MODEL_ID =
+export const DEFAULT_EMBEDDING_MODEL_ID =
   "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
 const EMBEDDING_MODEL_DTYPE = "q4";
-export const EMBEDDING_MODEL_VERSION = [
+export const DEFAULT_EMBEDDING_MODEL_VERSION = [
   "task:feature-extraction",
   `dtype:${EMBEDDING_MODEL_DTYPE}`,
   "pooling:mean",
@@ -43,12 +43,16 @@ export const createEmbeddingRepository = db => {
   `);
 
   return {
-    getCurrent(product) {
+    getCurrent(
+      product,
+      modelName = DEFAULT_EMBEDDING_MODEL_ID,
+      modelVersion = DEFAULT_EMBEDDING_MODEL_VERSION
+    ) {
       if (!product.isin) return undefined;
       const row = findCurrentEmbedding.get(
         product.isin,
-        EMBEDDING_MODEL_ID,
-        EMBEDDING_MODEL_VERSION
+        modelName,
+        modelVersion
       );
 
       if (!row) return undefined;
@@ -61,12 +65,18 @@ export const createEmbeddingRepository = db => {
       };
     },
 
-    save(product, semanticTextHash, embedding) {
+    save(
+      product,
+      semanticTextHash,
+      embedding,
+      modelName = DEFAULT_EMBEDDING_MODEL_ID,
+      modelVersion = DEFAULT_EMBEDDING_MODEL_VERSION
+    ) {
       insertEmbedding.run(
         `${product.productId}`,
         product.isin,
-        EMBEDDING_MODEL_ID,
-        EMBEDDING_MODEL_VERSION,
+        modelName,
+        modelVersion,
         semanticTextHash,
         JSON.stringify(embedding),
         new Date().toISOString()

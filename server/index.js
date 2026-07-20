@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import {
   createEmbeddingRepository,
+  DEFAULT_EMBEDDING_MODEL_ID,
+  DEFAULT_EMBEDDING_MODEL_VERSION,
   hashSemanticText
 } from "./semanticEmbeddings.js";
 
@@ -261,7 +263,11 @@ let embeddingStats = {
   failed: 0
 };
 
-const scanProductEmbeddingCache = products => {
+const scanProductEmbeddingCache = (
+  products,
+  modelName = DEFAULT_EMBEDDING_MODEL_ID,
+  modelVersion = DEFAULT_EMBEDDING_MODEL_VERSION
+) => {
   const stats = {
     status: "ready",
     modelName: undefined,
@@ -273,7 +279,11 @@ const scanProductEmbeddingCache = products => {
   };
 
   products.forEach(product => {
-    const cachedEmbedding = embeddingRepository.getCurrent(product);
+    const cachedEmbedding = embeddingRepository.getCurrent(
+      product,
+      modelName,
+      modelVersion
+    );
 
     if (cachedEmbedding) {
       stats.cached += 1;
@@ -302,11 +312,19 @@ app.get("/health", (_, response) => {
   });
 });
 
-app.get("/api/product-embeddings", (_, response) => {
+app.get("/api/product-embeddings", (request, response) => {
+  const modelName =
+    request.query.modelName?.toString() ?? DEFAULT_EMBEDDING_MODEL_ID;
+  const modelVersion =
+    request.query.modelVersion?.toString() ?? DEFAULT_EMBEDDING_MODEL_VERSION;
   const products = getProductRows().map(parseProduct);
   const embeddings = products
     .map(product => {
-      const cachedEmbedding = embeddingRepository.getCurrent(product);
+      const cachedEmbedding = embeddingRepository.getCurrent(
+        product,
+        modelName,
+        modelVersion
+      );
 
       if (!cachedEmbedding) return undefined;
 
@@ -323,17 +341,32 @@ app.get("/api/product-embeddings", (_, response) => {
 
   response.json({
     totalProducts: products.length,
+    modelName,
+    modelVersion,
     cached: embeddings.length,
     embeddings
   });
 });
 
 app.post("/api/product-embeddings", (request, response) => {
-  const { product, semanticText, embedding } = request.body ?? {};
+  const {
+    product,
+    semanticText,
+    embedding,
+    modelName = DEFAULT_EMBEDDING_MODEL_ID,
+    modelVersion = DEFAULT_EMBEDDING_MODEL_VERSION
+  } = request.body ?? {};
 
-  if (!product?.isin || !semanticText || !Array.isArray(embedding)) {
+  if (
+    !product?.isin ||
+    !semanticText ||
+    !Array.isArray(embedding) ||
+    !modelName ||
+    !modelVersion
+  ) {
     response.status(400).json({
-      message: "product.isin, semanticText and embedding[] are required"
+      message:
+        "product.isin, semanticText, embedding[], modelName and modelVersion are required"
     });
     return;
   }
@@ -341,12 +374,16 @@ app.post("/api/product-embeddings", (request, response) => {
   embeddingRepository.save(
     product,
     hashSemanticText(semanticText),
-    embedding.map(Number)
+    embedding.map(Number),
+    modelName,
+    modelVersion
   );
 
   response.status(201).json({
     saved: true,
-    isin: product.isin
+    isin: product.isin,
+    modelName,
+    modelVersion
   });
 });
 

@@ -1,5 +1,5 @@
 .c-note-head {
-  background-color: #264d7a;
+  background-color: #0f766e;
   max-height: 50px;
   padding: 8px 0;
   height: 40px;
@@ -11,29 +11,17 @@
   zoom: 1;
 }
 
-.c-iccrea-logo {
+.c-semantic-search-logo {
   float: left;
   width: 100%;
-  max-width: 157px;
+  max-width: 154px;
   height: 32.52px;
 
   img,
   svg {
     width: 100%;
-    max-width: 157px;
-  }
-}
-
-.c-bcc-logo {
-  float: right;
-  max-width: 98px;
-  width: 100%;
-  text-align: right;
-  height: 32.52px;
-
-  img,
-  svg {
-    width: 100%;
-    max-width: 98px;
+    max-width: 154px;
+    height: 32px;
+    object-fit: contain;
   }
 }

@@ -14,7 +14,7 @@ const getChartData = (row: any) => {
   const datasets = row.weightChart || row.stackedChart || [];
   return datasets.map((dataset: any, index: number) => ({
     name: dataset.name,
-    color: index === 0 ? "#92a6bc" : "#264d7a",
+    color: index === 0 ? "#6b9f9a" : "#0f766e",
     percentage: Number(dataset.value)
   }));
 };

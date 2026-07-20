@@ -6,6 +6,11 @@ import {
   SemanticProductSearchResult,
   SemanticProductSource
 } from "./semanticTypes";
+import {
+  DEFAULT_EMBEDDING_MODEL_KEY,
+  EmbeddingModelKey,
+  getEmbeddingModel
+} from "./embeddingModels";
 
 const semanticHighlightLabels = [
   "Miglior match",
@@ -37,6 +42,7 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
   options: {
     backendSearchUrl?: string;
     useBackendSearch?: boolean;
+    modelKey?: EmbeddingModelKey;
     onEmbeddingGenerated?: (payload: {
       product: TProduct;
       semanticText: string;
@@ -54,7 +60,11 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
   const [isIndexingSemanticProducts, setIsIndexingSemanticProducts] =
     useState(false);
   const [isSemanticSearchActive, setIsSemanticSearchActive] = useState(false);
+  const [indexDurationMs, setIndexDurationMs] = useState<number>();
+  const [searchDurationMs, setSearchDurationMs] = useState<number>();
   const indexedProductsSignatureRef = useRef<string>("");
+  const modelKey = options.modelKey ?? DEFAULT_EMBEDDING_MODEL_KEY;
+  const model = getEmbeddingModel(modelKey);
 
   useEffect(() => {
     let ignore = false;
@@ -80,6 +90,7 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
       }
 
       const productsSignature = [
+        modelKey,
         products.length,
         products[0]?.productId ?? products[0]?.isin ?? "",
         products[products.length - 1]?.productId ??
@@ -96,6 +107,8 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
       }
 
       setIsIndexingSemanticProducts(true);
+      setSemanticResults([]);
+      setIsSemanticSearchActive(false);
       const precomputedEmbeddings = products.filter(product =>
         Array.isArray(product.semanticEmbedding)
       ).length;
@@ -110,7 +123,9 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
           missingEmbeddings
         }
       );
+      const indexStartedAt = performance.now();
       const nextIndex = await buildSemanticIndex(products, {
+        modelKey,
         onEmbeddingGenerated: options.onEmbeddingGenerated
       });
 
@@ -118,7 +133,14 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
         indexedProductsSignatureRef.current = productsSignature;
         setSemanticIndex(nextIndex);
         setIsIndexingSemanticProducts(false);
-        semanticDebugLog("Indicizzazione completata", nextIndex.length);
+        const durationMs = performance.now() - indexStartedAt;
+        setIndexDurationMs(durationMs);
+        semanticDebugLog("Indicizzazione completata", {
+          modelKey,
+          model: model.modelId,
+          products: nextIndex.length,
+          durationMs: Number(durationMs.toFixed(1))
+        });
       }
     };
 
@@ -127,7 +149,13 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
     return () => {
       ignore = true;
     };
-  }, [options.onEmbeddingGenerated, options.useBackendSearch, products]);
+  }, [
+    model.modelId,
+    modelKey,
+    options.onEmbeddingGenerated,
+    options.useBackendSearch,
+    products
+  ]);
 
   const searchSemantically = useCallback(async () => {
     const query = semanticQuery.trim();
@@ -182,14 +210,30 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
       return;
     }
 
-    semanticDebugLog("Avvio ricerca semantica da UI", query);
-    const nextResults = await searchProductsByMeaning(query, semanticIndex);
+    semanticDebugLog("Avvio ricerca semantica da UI", {
+      query,
+      modelKey,
+      model: model.modelId
+    });
+    const searchStartedAt = performance.now();
+    const nextResults = await searchProductsByMeaning(query, semanticIndex, 20, {
+      modelKey
+    });
+    const durationMs = performance.now() - searchStartedAt;
     setSemanticResults(nextResults);
     setIsSemanticSearchActive(true);
-    semanticDebugLog("Ricerca semantica completata", nextResults.length);
+    setSearchDurationMs(durationMs);
+    semanticDebugLog("Ricerca semantica completata", {
+      modelKey,
+      model: model.modelId,
+      results: nextResults.length,
+      durationMs: Number(durationMs.toFixed(1))
+    });
   }, [
     options.backendSearchUrl,
     options.useBackendSearch,
+    model.modelId,
+    modelKey,
     semanticIndex,
     semanticQuery
   ]);
@@ -199,11 +243,14 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
 
     if (options.useBackendSearch) return;
 
-    searchProductsByMeaning(semanticQuery, semanticIndex).then(nextResults => {
-      setSemanticResults(nextResults);
-    });
+    searchProductsByMeaning(semanticQuery, semanticIndex, 20, { modelKey }).then(
+      nextResults => {
+        setSemanticResults(nextResults);
+      }
+    );
   }, [
     isSemanticSearchActive,
+    modelKey,
     options.useBackendSearch,
     semanticIndex,
     semanticQuery
@@ -222,6 +269,10 @@ export const useSemanticProductSearch = <TProduct extends SemanticProductSource>
     semanticProducts: withSemanticHighlights(semanticResults),
     isIndexingSemanticProducts,
     isSemanticSearchActive,
+    modelKey,
+    model,
+    indexDurationMs,
+    searchDurationMs,
     searchSemantically,
     clearSemanticSearch
   };

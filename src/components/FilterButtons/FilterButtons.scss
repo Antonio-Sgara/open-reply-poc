@@ -25,7 +25,7 @@
   text-transform: uppercase;
   @include box-shadow(0, 1px, 2px, 0, rgba(0, 0, 0, 0.1), inset);
   &.active {
-    background-color: #264d7a;
+    background-color: $color-blu-dark;
     color: $color-white;
   }
   &:hover {

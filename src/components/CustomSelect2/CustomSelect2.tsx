@@ -191,12 +191,16 @@ export const CustomSelect2: React.FC<IProps> = props => {
       ...styles,
       width: "100%",
       height: "100%",
-      backgroundColor: props.disabled ? "#f5f6f8" : "#fff",
+      backgroundColor: props.disabled ? "#f2f2f2" : "#fff",
       fontFamily: "Roboto",
       fontSize: "14px",
       borderStyle: "solid",
-      borderWidth: props.disabled ? 0 : "1px",
-      borderColor: props.hasErrors ? "#FE170F" : "#e9edf2",
+      borderWidth: "1px",
+      borderColor: props.hasErrors
+        ? "#FE170F"
+        : props.disabled
+          ? "#cccccc"
+          : "#e9edf2",
       borderRadius: "2px",
       boxShadow: "none",
       ...addStyles.input
@@ -210,7 +214,7 @@ export const CustomSelect2: React.FC<IProps> = props => {
     singleValue: (provided: any) => ({
       ...provided,
       fontFamily: "Roboto",
-      color: "#262626",
+      color: props.disabled ? "#666666" : "#262626",
       ...addStyles.value
     }),
     IndicatorsContainer: (provided: any) => ({
@@ -234,7 +238,7 @@ export const CustomSelect2: React.FC<IProps> = props => {
       fontSize: "16px",
       zIndex: 9999999,
       background: state.isSelected
-        ? "#264d7a"
+        ? "#0f766e"
         : state.isFocused
           ? "#f1f4f7"
           : "#fff",
@@ -248,6 +252,8 @@ export const CustomSelect2: React.FC<IProps> = props => {
     }),
     placeholder: (provided: any) => ({
       ...provided,
+      color: props.disabled ? "#666666" : provided.color,
+      opacity: 1,
       ...addStyles.placeholder
     }),
     menu: (provided: any) => ({

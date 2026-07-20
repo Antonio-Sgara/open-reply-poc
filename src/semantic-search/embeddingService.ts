@@ -1,26 +1,29 @@
 import { SemanticEmbedding } from "./semanticTypes";
 import { semanticDebugGroup, semanticDebugLog } from "./debug";
+import {
+  DEFAULT_EMBEDDING_MODEL_KEY,
+  EmbeddingModelKey,
+  EmbeddingPurpose,
+  getEmbeddingModel,
+  prepareEmbeddingText
+} from "./embeddingModels";
 
 const EMBEDDING_SIZE = 128;
-export const EMBEDDING_MODEL_ID =
-  "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
-const EMBEDDING_MODEL_DTYPE = "q4";
-export const EMBEDDING_MODEL_VERSION = [
-  "task:feature-extraction",
-  `dtype:${EMBEDDING_MODEL_DTYPE}`,
-  "pooling:mean",
-  "normalize:true",
-  "semanticText:v1"
-].join("|");
+const defaultModel = getEmbeddingModel();
+export const EMBEDDING_MODEL_ID = defaultModel.modelId;
+export const EMBEDDING_MODEL_VERSION = defaultModel.version;
 
 type FeatureExtractionPipeline = (
   text: string,
   options?: { pooling?: "mean"; normalize?: boolean }
 ) => Promise<unknown>;
 
-let extractorPromise: Promise<FeatureExtractionPipeline> | null = null;
-let isModelUnavailable = false;
-let hasLoggedModelFallback = false;
+const extractorPromises = new Map<
+  EmbeddingModelKey,
+  Promise<FeatureExtractionPipeline>
+>();
+const unavailableModels = new Set<EmbeddingModelKey>();
+const loggedModelFallbacks = new Set<EmbeddingModelKey>();
 let generatedModelEmbeddingLogs = 0;
 const embeddingCache = new Map<string, Promise<SemanticEmbedding>>();
 
@@ -65,45 +68,52 @@ const hashToken = (token: string) => {
   return Math.abs(hash);
 };
 
-const getExtractor = async () => {
-  if (!extractorPromise) {
+const getExtractor = async (modelKey: EmbeddingModelKey) => {
+  const model = getEmbeddingModel(modelKey);
+
+  if (!extractorPromises.has(modelKey)) {
     semanticDebugLog("Caricamento modello embedding reale", {
       provider: "@huggingface/transformers",
-      model: EMBEDDING_MODEL_ID,
-      dtype: EMBEDDING_MODEL_DTYPE,
+      modelKey,
+      model: model.modelId,
+      dtype: model.dtype,
       task: "feature-extraction"
     });
 
-    extractorPromise = import("@huggingface/transformers").then(
+    extractorPromises.set(modelKey, import("@huggingface/transformers").then(
       ({ pipeline }) =>
-        pipeline("feature-extraction", EMBEDDING_MODEL_ID, {
-          dtype: EMBEDDING_MODEL_DTYPE
+        pipeline("feature-extraction", model.modelId, {
+          dtype: model.dtype
         }) as Promise<FeatureExtractionPipeline>
-    );
+    ));
   }
 
-  return extractorPromise;
+  return extractorPromises.get(modelKey)!;
 };
 
-const tensorToEmbedding = (output: any): SemanticEmbedding => {
-  if (output?.data) {
-    return Array.from(output.data, Number);
+const toNumberArray = (value: unknown): SemanticEmbedding | null => {
+  if (!Array.isArray(value)) return null;
+
+  const values = Array.isArray(value[0]) ? value[0] : value;
+  return values.map(Number);
+};
+
+const tensorToEmbedding = (output: unknown): SemanticEmbedding => {
+  if (typeof output === "object" && output !== null) {
+    const tensor = output as { data?: unknown; tolist?: unknown };
+
+    if (Array.isArray(tensor.data) || ArrayBuffer.isView(tensor.data)) {
+      return Array.from(tensor.data as ArrayLike<number>, Number);
+    }
+
+    if (typeof tensor.tolist === "function") {
+      const embedding = toNumberArray(tensor.tolist());
+      if (embedding) return embedding;
+    }
   }
 
-  if (typeof output?.tolist === "function") {
-    const list = output.tolist();
-    return Array.isArray(list?.[0])
-      ? list[0].map(Number)
-      : list.map(Number);
-  }
-
-  if (Array.isArray(output?.[0])) {
-    return output[0].map(Number);
-  }
-
-  if (Array.isArray(output)) {
-    return output.map(Number);
-  }
+  const embedding = toNumberArray(output);
+  if (embedding) return embedding;
 
   throw new Error("Formato embedding non riconosciuto");
 };
@@ -133,10 +143,16 @@ const embedTextWithMockFallback = async (
   return embedding;
 };
 
-const embedTextWithModel = async (text: string): Promise<SemanticEmbedding> => {
-  const extractor = await getExtractor();
-  const output = await extractor(text, {
-    pooling: "mean",
+const embedTextWithModel = async (
+  text: string,
+  modelKey: EmbeddingModelKey,
+  purpose: EmbeddingPurpose
+): Promise<SemanticEmbedding> => {
+  const model = getEmbeddingModel(modelKey);
+  const extractor = await getExtractor(modelKey);
+  const preparedText = prepareEmbeddingText(text, model, purpose);
+  const output = await extractor(preparedText, {
+    pooling: model.pooling,
     normalize: true
   });
   const embedding = tensorToEmbedding(output);
@@ -149,9 +165,11 @@ const embedTextWithModel = async (text: string): Promise<SemanticEmbedding> => {
     semanticDebugGroup("Embedding reale generato", () => {
       console.log("Progressivo embedding modello:", generatedModelEmbeddingLogs);
       console.log("Provider:", "@huggingface/transformers");
-      console.log("Modello:", EMBEDDING_MODEL_ID);
-      console.log("Quantizzazione:", EMBEDDING_MODEL_DTYPE);
+      console.log("Modello:", model.modelId);
+      console.log("Quantizzazione:", model.dtype);
+      console.log("Scopo:", purpose);
       console.log("Input testo:", text);
+      console.log("Input preparato:", preparedText);
       console.log("Dimensione vettore:", embedding.length);
       console.log("Prime dimensioni:", embedding.slice(0, 12));
     });
@@ -160,29 +178,39 @@ const embedTextWithModel = async (text: string): Promise<SemanticEmbedding> => {
   return embedding;
 };
 
-export const embedText = async (text: string): Promise<SemanticEmbedding> => {
-  const cacheKey = text.trim();
+export const embedText = async (
+  text: string,
+  options: {
+    modelKey?: EmbeddingModelKey;
+    purpose?: EmbeddingPurpose;
+  } = {}
+): Promise<SemanticEmbedding> => {
+  const modelKey = options.modelKey ?? DEFAULT_EMBEDDING_MODEL_KEY;
+  const purpose = options.purpose ?? "query";
+  const model = getEmbeddingModel(modelKey);
+  const normalizedText = text.trim();
+  const cacheKey = `${modelKey}|${purpose}|${normalizedText}`;
 
   if (!embeddingCache.has(cacheKey)) {
-    const embeddingPromise = isModelUnavailable
-      ? embedTextWithMockFallback(cacheKey)
-      : embedTextWithModel(cacheKey).catch(error => {
-          isModelUnavailable = true;
+    const embeddingPromise = unavailableModels.has(modelKey)
+      ? embedTextWithMockFallback(normalizedText)
+      : embedTextWithModel(normalizedText, modelKey, purpose).catch(error => {
+          unavailableModels.add(modelKey);
 
-          if (!hasLoggedModelFallback) {
-            hasLoggedModelFallback = true;
+          if (!loggedModelFallbacks.has(modelKey)) {
+            loggedModelFallbacks.add(modelKey);
 
             semanticDebugGroup("Fallback embedding mock", () => {
               console.warn(
                 "Impossibile generare embedding reale, uso fallback mock.",
                 error
               );
-              console.log("Modello richiesto:", EMBEDDING_MODEL_ID);
-              console.log("Input testo:", cacheKey);
+              console.log("Modello richiesto:", model.modelId);
+              console.log("Input testo:", normalizedText);
             });
           }
 
-          return embedTextWithMockFallback(cacheKey);
+          return embedTextWithMockFallback(normalizedText);
         });
 
     embeddingCache.set(cacheKey, embeddingPromise);

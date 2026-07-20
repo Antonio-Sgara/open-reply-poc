@@ -7,7 +7,7 @@ const OverviewSectionWrapper = ({ className = "", children = null }: any) => {
       className={"overviewSection__wrapper " + className}
       style={{
         backgroundImage:
-          'url("' + HeaderSvg + '"), linear-gradient(109deg, #264d7a, #3582b2)'
+          'url("' + HeaderSvg + '"), linear-gradient(109deg, #0f766e, #14b8a6)'
       }}
     >
       {children}

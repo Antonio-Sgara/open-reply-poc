@@ -1,6 +1,6 @@
 import React from "react";
 
-const VerticalBar = ({ color = "#264d7a" }: { color?: string }) => (
+const VerticalBar = ({ color = "#0f766e" }: { color?: string }) => (
   <span
     style={{
       backgroundColor: color,

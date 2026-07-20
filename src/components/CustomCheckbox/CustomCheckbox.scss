@@ -1,3 +1,5 @@
+@import "../../styles/variables";
+
 .CustomCheckbox {
   display: inline-block;
   width: auto;
@@ -21,7 +23,7 @@
 .CustomCheckbox__view {
   width: 17px;
   height: 17px;
-  border: 1px solid #264d7a;
+  border: 1px solid $color-blu-dark;
   background-color: #e9edf2;
   display: inline-flex;
   border-radius: 12px;
@@ -50,7 +52,7 @@
   cursor: pointer;
 
   g {
-    fill: #264d7a;
+    fill: $color-blu-dark;
   }
 
   &.disabled {
@@ -73,7 +75,7 @@
     content: "";
     width: 7px;
     height: 7px;
-    background-color: #264d7a;
+    background-color: $color-blu-dark;
     position: absolute;
     border-radius: 100%;
     margin: 4px;
@@ -82,7 +84,7 @@
   &.withSvgCheck:not(:checked)
     + .CustomCheckbox__checkIcon.Checked_AnagraphicAnswer {
     g {
-      fill: #264d7a8c;
+      fill: rgba(15, 118, 110, 0.55);
     }
 
     display: block;
@@ -108,7 +110,7 @@
   content: "";
   width: 7px;
   height: 7px;
-  background-color: #264d7a8c;
+  background-color: rgba(15, 118, 110, 0.55);
   position: absolute;
   border-radius: 100%;
   margin: 4px;

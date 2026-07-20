@@ -35,9 +35,11 @@ import InfoAlert from "components/InfoAlert";
 import { useSemanticProductSearch } from "../../../semantic-search/useSemanticProductSearch";
 import { semanticDebugGroup, semanticDebugLog } from "../../../semantic-search/debug";
 import {
-  EMBEDDING_MODEL_ID,
-  EMBEDDING_MODEL_VERSION
-} from "../../../semantic-search/embeddingService";
+  DEFAULT_EMBEDDING_MODEL_KEY,
+  EMBEDDING_MODELS,
+  EmbeddingModelKey,
+  getEmbeddingModel
+} from "../../../semantic-search/embeddingModels";
 import "./WidgetProductList.scss";
 
 const POC_API_HEALTH_URL = "http://127.0.0.1:3001/health";
@@ -356,6 +358,9 @@ const WidgetProductsList: FC<IProps> = ({
   const [errorAdvancedSearch, setErrorAdvancedSearch] = useState(false);
   const [pastMonthLastDay, setPastMonthLastDay] = useState("");
   const [pocApiProducts, setPocApiProducts] = useState<any[]>([]);
+  const [selectedEmbeddingModelKey, setSelectedEmbeddingModelKey] =
+    useState<EmbeddingModelKey>(DEFAULT_EMBEDDING_MODEL_KEY);
+  const selectedEmbeddingModel = getEmbeddingModel(selectedEmbeddingModelKey);
   const generatedEmbeddingSaveCountRef = React.useRef(0);
   const autoPopulatedFilterIdsRef = React.useRef<string[]>([]);
   const lastAutoFilterSignatureRef = React.useRef("");
@@ -373,8 +378,8 @@ const WidgetProductsList: FC<IProps> = ({
           generated,
           productId: product.productId,
           isin: product.isin,
-          model: EMBEDDING_MODEL_ID,
-          modelVersion: EMBEDDING_MODEL_VERSION,
+          model: selectedEmbeddingModel.modelId,
+          modelVersion: selectedEmbeddingModel.version,
           dimensions: embedding.length
         });
       }
@@ -390,7 +395,9 @@ const WidgetProductsList: FC<IProps> = ({
             isin: product.isin
           },
           semanticText,
-          embedding
+          embedding,
+          modelName: selectedEmbeddingModel.modelId,
+          modelVersion: selectedEmbeddingModel.version
         })
       }).catch(error => {
         semanticDebugLog("Salvataggio embedding su SQLite fallito", {
@@ -400,7 +407,7 @@ const WidgetProductsList: FC<IProps> = ({
         });
       });
     },
-    []
+    [selectedEmbeddingModel.modelId, selectedEmbeddingModel.version]
   );
   const {
     semanticQuery,
@@ -409,10 +416,13 @@ const WidgetProductsList: FC<IProps> = ({
     semanticResults,
     isIndexingSemanticProducts,
     isSemanticSearchActive,
+    indexDurationMs,
+    searchDurationMs,
     searchSemantically,
     clearSemanticSearch
   } = useSemanticProductSearch<any>(semanticDatasetProducts, {
     useBackendSearch: false,
+    modelKey: selectedEmbeddingModelKey,
     onEmbeddingGenerated: saveGeneratedEmbedding
   });
 
@@ -448,6 +458,8 @@ const WidgetProductsList: FC<IProps> = ({
 
   useEffect(() => {
     let isMounted = true;
+    generatedEmbeddingSaveCountRef.current = 0;
+    setPocApiProducts([]);
 
     fetch(POC_API_HEALTH_URL)
       .then(response => {
@@ -470,7 +482,12 @@ const WidgetProductsList: FC<IProps> = ({
         });
 
         try {
-          const embeddingResponse = await fetch(POC_API_PRODUCT_EMBEDDINGS_URL);
+          const embeddingParams = new URLSearchParams({
+            modelName: selectedEmbeddingModel.modelId,
+            modelVersion: selectedEmbeddingModel.version
+          });
+          const embeddingUrl = `${POC_API_PRODUCT_EMBEDDINGS_URL}?${embeddingParams.toString()}`;
+          const embeddingResponse = await fetch(embeddingUrl);
           if (!embeddingResponse.ok) {
             throw new Error(
               `POC API embeddings failed: ${embeddingResponse.status}`
@@ -478,6 +495,7 @@ const WidgetProductsList: FC<IProps> = ({
           }
 
           const embeddingData = await embeddingResponse.json();
+          if (!isMounted) return;
           const embeddingsByIsin = new Map<string, any>(
             (embeddingData?.embeddings ?? []).map((embedding: any) => [
               embedding.isin,
@@ -492,6 +510,8 @@ const WidgetProductsList: FC<IProps> = ({
           setPocApiProducts(productsWithCachedEmbeddings);
           semanticDebugGroup("Embedding prodotti letti da SQLite per FE", () => {
             console.log("Prodotti totali:", apiProducts.length);
+            console.log("Modello:", embeddingData?.modelName);
+            console.log("Versione:", embeddingData?.modelVersion);
             console.log("Embedding in cache SQLite:", embeddingData?.cached ?? 0);
             console.log(
               "Embedding mancanti da generare nel FE:",
@@ -515,6 +535,8 @@ const WidgetProductsList: FC<IProps> = ({
             "Embedding SQLite non disponibili: il FE li generera' con Transformers.js",
             {
               url: POC_API_PRODUCT_EMBEDDINGS_URL,
+              model: selectedEmbeddingModel.modelId,
+              modelVersion: selectedEmbeddingModel.version,
               error: error instanceof Error ? error.message : error,
               products: apiProducts.length
             }
@@ -532,7 +554,7 @@ const WidgetProductsList: FC<IProps> = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedEmbeddingModel.modelId, selectedEmbeddingModel.version]);
 
   useEffect(() => {
     try {
@@ -735,7 +757,7 @@ const WidgetProductsList: FC<IProps> = ({
     setAdvancedFilterModel(
       advancedProductSearchModelOptions(filter, activeFilters)
     );
-  }, [prodFilter, companyName]);
+  }, [prodFilter, companyName, activeFilters]);
 
   const handleAdvancedFilter = useCallback(
     (filterId: string, value: string | string[]) => {
@@ -1179,6 +1201,9 @@ const WidgetProductsList: FC<IProps> = ({
     showFavorites
   ]);
 
+  const hasSemanticProducts =
+    !isShowingSecondary && isSemanticSearchActive && semanticProducts.length > 0;
+
   return (
     <div className={`widgetProductsList ${className ?? ""}`}>
       <InfoAlert
@@ -1197,6 +1222,11 @@ const WidgetProductsList: FC<IProps> = ({
       {!isShowingSecondary && (
         <form
           className="widgetProductsList__semanticSearch"
+          data-embedding-model={selectedEmbeddingModelKey}
+          data-indexing={isIndexingSemanticProducts}
+          data-index-duration-ms={indexDurationMs ?? ""}
+          data-search-duration-ms={searchDurationMs ?? ""}
+          data-semantic-products-count={semanticDatasetProducts.length}
           onSubmit={event => {
             event.preventDefault();
             semanticDebugLog("Submit form ricerca semantica", {
@@ -1214,6 +1244,28 @@ const WidgetProductsList: FC<IProps> = ({
           >
             Ricerca semantica
           </label>
+          <div className="widgetProductsList__semanticModelRow">
+            <label htmlFor="semantic-embedding-model">Modello embedding</label>
+            <select
+              id="semantic-embedding-model"
+              className="widgetProductsList__semanticModelSelect"
+              value={selectedEmbeddingModelKey}
+              disabled={isIndexingSemanticProducts}
+              onChange={event => {
+                clearSemanticSearch();
+                setSelectedEmbeddingModelKey(
+                  event.target.value as EmbeddingModelKey
+                );
+              }}
+            >
+              {EMBEDDING_MODELS.map(model => (
+                <option key={model.key} value={model.key}>
+                  {model.label}
+                </option>
+              ))}
+            </select>
+            <span>{selectedEmbeddingModel.dimensions} dimensioni</span>
+          </div>
           <div className="widgetProductsList__semanticSearchControls">
             <input
               id="semantic-product-search"
@@ -1248,10 +1300,10 @@ const WidgetProductsList: FC<IProps> = ({
           </div>
           <div className="widgetProductsList__semanticSearchStatus">
             {isIndexingSemanticProducts
-              ? "Preparazione indice semantico..."
+              ? `Preparazione indice ${selectedEmbeddingModel.label}...`
               : isSemanticSearchActive
-                ? `${semanticResults.length} risultati semantici su ${semanticDatasetProducts.length} prodotti`
-                : `La ricerca interpreta una frase libera su ${semanticDatasetProducts.length} prodotti della POC.`}
+                ? `${semanticResults.length} risultati su ${semanticDatasetProducts.length} prodotti · ricerca ${Math.round(searchDurationMs ?? 0)} ms`
+                : `${selectedEmbeddingModel.label} · ${semanticDatasetProducts.length} prodotti · indice ${Math.round(indexDurationMs ?? 0)} ms`}
           </div>
         </form>
       )}
@@ -1286,6 +1338,10 @@ const WidgetProductsList: FC<IProps> = ({
                   className={`widgetProductsList__topMatch widgetProductsList__topMatch--${index +
                     1}`}
                   key={`semantic-top-match-${product.productId ?? product.isin}`}
+                  data-semantic-score={result.semanticScore ?? ""}
+                  data-business-boost={result.businessBoost ?? ""}
+                  data-final-score={result.finalScore ?? result.score}
+                  data-matched-rules={(result.matchedRules ?? []).join("|")}
                 >
                   <div className="widgetProductsList__topMatchRank">
                     {index + 1}
@@ -1399,7 +1455,7 @@ const WidgetProductsList: FC<IProps> = ({
           <Loader.Spinner />
         </Loader.FixedWrapper>
       )}
-      {!loading && (!products || error) ? (
+      {!loading && !hasSemanticProducts && (!products || error) ? (
         <FormattedMessage id="products.productList.products.empty" />
       ) : isShowingSecondary && fundsAnalysisProducts ? (
         <ListProductsFundsAnalysis
@@ -1422,7 +1478,7 @@ const WidgetProductsList: FC<IProps> = ({
           currentPage={currentPageFundsAnalysisProducts}
           isTableFiltered={isTableFiltered}
         />
-      ) : products ? (
+      ) : products || hasSemanticProducts ? (
         <ListProducts
           products={isSemanticSearchActive ? semanticProducts : products}
           className={"withColFixed"}
