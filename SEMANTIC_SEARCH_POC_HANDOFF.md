@@ -3098,26 +3098,7 @@ query consulente
 -> Top match mostra motivazioni coerenti
 ```
 
-#### 2. Valutazione qualita' modello embedding
-
-Preparare una mini-suite di query e risultati attesi.
-
-Obiettivo:
-
-- capire se `Xenova/paraphrase-multilingual-MiniLM-L12-v2` e' adeguato
-- confrontare top 3/top 10
-- capire dove servono regole business o query rewrite
-
-Query candidate:
-
-- `prodotti sostenibili con rischio basso`
-- `prodotti sostenibili con rischio medio`
-- `prodotti di aziende nel settore informatico`
-- `prodotti militari`
-- `dammi le azioni di amazon`
-- `prodotti simili a <ISIN>`
-
-#### 3. Migliorare ricerca "prodotti simili a ISIN"
+#### 2. Migliorare ricerca "prodotti simili a ISIN"
 
 Oggi la similarita' puo' essere debole, soprattutto sui prodotti extra/equity.
 
@@ -3128,7 +3109,7 @@ Task:
 - confrontare product type, asset class, rischio, valuta, sostenibilita', eco, PAI, BIC, cedola
 - evitare di fingere similarita' settoriale se il settore non e' presente nei dati
 
-#### 4. Recuperare campi mancanti per similarita'
+#### 3. Recuperare campi mancanti per similarita'
 
 Open point:
 
@@ -3149,7 +3130,7 @@ Nota gia' discussa:
 - le performance/rendimenti cambiano spesso
 - meglio non usarle come dato statico nella POC, salvo fonte aggiornata
 
-#### 5. IndexedDB come buffer locale embedding
+#### 4. IndexedDB come buffer locale embedding
 
 Task volutamente ultimo.
 
@@ -3210,6 +3191,70 @@ Decisione attuale:
 
 - non farlo ora
 - verra' eventualmente superato da IndexedDB come buffer locale
+
+### Task svolto - Confronto di tre modelli embedding
+
+Data completamento: 2026-07-27.
+
+Sono stati configurati e testati con la stessa batteria di nove query:
+
+1. `Xenova/paraphrase-multilingual-MiniLM-L12-v2`
+2. `Xenova/multilingual-e5-small`
+3. `Xenova/distiluse-base-multilingual-cased-v2`
+
+La UI permette di cambiare modello dal catalogo. Per ogni modello:
+
+- prodotti e query vengono convertiti con lo stesso modello
+- la cache SQLite e' separata tramite `model_name` e `model_version`
+- il cambio modello recupera gli embedding corretti senza mescolare vettori
+- la console mostra modello, origine cache/generazione, tempi e score
+
+Stato cache SQLite:
+
+| Modello | Prodotti | Dimensioni |
+| --- | ---: | ---: |
+| MiniLM multilingual | 1509/1509 | 384 |
+| Multilingual E5 small | 1509/1509 | 384 |
+| DistilUSE multilingual | 1509/1509 | 768 |
+
+Nota DistilUSE:
+
+- la pipeline `feature-extraction` di Transformers.js produce effettivamente
+  vettori da 768 dimensioni
+- la configurazione iniziale indicava 512 ed e' stata corretta dopo la verifica
+  diretta di tutte le righe SQLite
+
+Confronto prestazioni:
+
+| Modello | Cache start | Prima query | Query warm media |
+| --- | ---: | ---: | ---: |
+| MiniLM | 448 ms | 1327 ms | 19 ms |
+| E5 small | 628 ms | 1513 ms | 21 ms |
+| DistilUSE | 321 ms | 2024 ms | 32 ms |
+
+Prima generazione misurata:
+
+- E5 small: circa 6 minuti e 16 secondi
+- DistilUSE: circa 12 minuti e 17 secondi
+
+Decisione:
+
+- il modello consigliato per la POC e' **Multilingual E5 small**
+- E5 e' l'unico dei tre a mettere Amazon al primo posto senza regole dedicate
+- E5 produce risultati migliori sulla query obbligazionaria corporate
+- E5 riconosce meglio i prodotti esplicitamente sostenibili
+- le prestazioni warm sono quasi identiche a MiniLM
+- E5 usa vettori piu' compatti di DistilUSE
+
+MiniLM resta una buona alternativa orientata alla velocita'. DistilUSE non
+offre un miglioramento qualitativo sufficiente a compensare maggiore tempo di
+generazione, dimensione della cache e prima inferenza piu' lenta.
+
+Report completo:
+
+```text
+EMBEDDING_MODELS_COMPARISON.md
+```
 
 ### Comandi utili
 

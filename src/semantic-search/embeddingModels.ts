@@ -57,7 +57,7 @@ export const EMBEDDING_MODELS: EmbeddingModelConfig[] = [
     modelId: "Xenova/distiluse-base-multilingual-cased-v2",
     dtype: "q4",
     pooling: "mean",
-    dimensions: 512,
+    dimensions: 768,
     queryPrefix: "",
     documentPrefix: ""
   })

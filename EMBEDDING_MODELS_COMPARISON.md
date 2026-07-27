@@ -1,8 +1,9 @@
 # Confronto modelli embedding
 
-Stato: in corso.
+Stato: completato.
 
 Data avvio test: 2026-07-20.
+Data completamento test: 2026-07-27.
 
 ## Obiettivo
 
@@ -177,7 +178,7 @@ Punti deboli:
 - alcuni falsi positivi nelle query puramente semantiche
 - le regole business possono nascondere i limiti del modello
 
-Questa valutazione resta provvisoria fino al completamento di DistilUSE.
+Questa valutazione e' stata usata come baseline per i modelli successivi.
 
 ## Modello 2 - Multilingual E5 small
 
@@ -312,7 +313,7 @@ regole dedicate, risolvendo il principale errore osservato con MiniLM.
 | 2 | NL00150012L7 | NEWAMSTERDAM PHARMA | 0.8596 | 0 | 0.8596 |
 | 3 | AT0000A18XM4 | AMS AG | 0.8579 | 0 | 0.8579 |
 
-### Sintesi provvisoria E5
+### Sintesi E5
 
 Punti forti:
 
@@ -329,14 +330,176 @@ Punti deboli:
 - automotive e farmaceutico restano fortemente dipendenti dai boost business
 - i secondi risultati della ricerca Amazon sono solo somiglianze lessicali
 
+## Modello 3 - DistilUSE multilingual
+
+### Configurazione
+
+| Campo | Valore |
+| --- | --- |
+| Modello | `Xenova/distiluse-base-multilingual-cased-v2` |
+| Runtime | Transformers.js nel frontend |
+| Quantizzazione | `q4` |
+| Pooling | `mean` |
+| Normalizzazione | `true` |
+| Dimensioni effettive prodotte | 768 |
+| Prodotti con embedding SQLite | 1509/1509 |
+
+La pipeline `feature-extraction` di Transformers.js ha prodotto vettori da 768
+dimensioni. Il valore e' stato verificato su tutte le righe SQLite e la
+configurazione della UI e' stata corretta da 512 a 768.
+
+### Prestazioni rilevate
+
+| Misura | Risultato |
+| --- | ---: |
+| Prima generazione completa di 1509 embedding | 737306 ms |
+| Selezione modello e indice pronto da SQLite | 321 ms |
+| Ricostruzione del solo indice in memoria | 76 ms |
+| Prima query, incluso caricamento modello dalla cache browser | 2024 ms |
+| Query successive, media su 9 query | 32 ms |
+| Query successive, minimo | 12 ms |
+| Query successive, massimo | 52 ms |
+
+La prima generazione ha richiesto circa 12 minuti e 17 secondi, quasi il doppio
+di E5. Le query warm restano comunque sufficientemente rapide per la POC.
+
+### Risultati della batteria
+
+#### Q01 - fondi sostenibili con rischio basso in euro
+
+Valutazione: buona. Tutti i risultati hanno SRRI 1, valuta EUR e
+`sustainable=true`; il ranking e' fortemente sostenuto dalle regole business.
+
+| Pos | ISIN | Nome | SRRI | Semantic | Boost | Finale |
+| ---: | --- | --- | ---: | ---: | ---: | ---: |
+| 1 | FR0007493549 | CAAM TRESO ETAT | 1 | 0.374 | 0.940 | 1.314 |
+| 2 | FR0010885210 | NATIXIS TRESORERIE PLUS | 1 | 0.353 | 0.940 | 1.293 |
+| 3 | FR0010213355 | GROUPAMA ENTREPRISES-IC | 1 | 0.345 | 0.940 | 1.285 |
+
+#### Q07 - fondi obbligazionari corporate
+
+Valutazione: debole. I risultati sono meno esplicitamente obbligazionari e
+corporate rispetto a E5; ERSTE GROUP BANK e' un falso positivo evidente per la
+ricerca richiesta.
+
+| Pos | ISIN | Nome | Semantic | Boost | Finale |
+| ---: | --- | --- | ---: | ---: | ---: |
+| 1 | NL0013025539 | DD INCOME FUND A | 0.309 | 0 | 0.309 |
+| 2 | FR0007051040 | EUROSE | 0.293 | 0 | 0.293 |
+| 3 | AT0000652011 | ERSTE GROUP BANK AG | 0.287 | 0 | 0.287 |
+
+#### Q20 - prodotto prudente per un investitore conservativo
+
+Valutazione: buona. I tre prodotti hanno SRRI 1.
+
+| Pos | ISIN | Nome | SRRI | Semantic | Boost | Finale |
+| ---: | --- | --- | ---: | ---: | ---: | ---: |
+| 1 | FR0010288423 | HSBC MONETAIRE ETAT | 1 | 0.234 | 0.560 | 0.794 |
+| 2 | FR0010885210 | NATIXIS TRESORERIE PLUS | 1 | 0.220 | 0.560 | 0.780 |
+| 3 | FR0007493549 | CAAM TRESO ETAT | 1 | 0.219 | 0.560 | 0.779 |
+
+#### Q21 - strumenti difensivi in euro
+
+Valutazione: buona. I tre prodotti sono in EUR e hanno SRRI 1.
+
+| Pos | ISIN | Nome | SRRI | Semantic | Boost | Finale |
+| ---: | --- | --- | ---: | ---: | ---: | ---: |
+| 1 | IE00BYQQ0654 | BLACKROCK EURO CASH | 1 | 0.205 | 0.720 | 0.925 |
+| 2 | FR0010288423 | HSBC MONETAIRE ETAT | 1 | 0.195 | 0.720 | 0.915 |
+| 3 | FR0007493549 | CAAM TRESO ETAT | 1 | 0.180 | 0.720 | 0.900 |
+
+#### Q22 - soluzioni piu aggressive per crescita
+
+Valutazione: mista. I primi due prodotti hanno rischio alto, ma il legame
+semantico con la crescita finanziaria e' meno chiaro rispetto a E5.
+
+| Pos | ISIN | Nome | SRRI | Semantic | Boost | Finale |
+| ---: | --- | --- | ---: | ---: | ---: | ---: |
+| 1 | NL0015268814 | MPC ENERGY SOLUTIONS | 7 | 0.162 | 0 | 0.162 |
+| 2 | AT100ASTA001 | ASTA ENERGY SOLUTIONS | 6 | 0.159 | 0 | 0.159 |
+| 3 | DK0061535507 | LOYAL SOLUTIONS | 4 | 0.153 | 0 | 0.153 |
+
+#### Q23 - prodotti orientati alla sostenibilita
+
+Valutazione: debole sul significato. I prodotti hanno il flag
+`sustainable=true`, ma il primo risultato e' una societa' di esplorazione e
+produzione petrolifera e non e' un buon match semantico percepito.
+
+| Pos | ISIN | Nome | Semantic | Boost | Finale |
+| ---: | --- | --- | ---: | ---: | ---: |
+| 1 | NO0013119255 | INTEROIL EXPLORATION AND PRODUCTION | 0.299 | 0.220 | 0.519 |
+| 2 | DK0061277977 | MONSENSO | 0.288 | 0.220 | 0.508 |
+| 3 | FR0010487272 | FINAXO ENVIRONNEMENT | 0.285 | 0.220 | 0.505 |
+
+#### Q25 - prodotti automotive
+
+Valutazione: buona, con contributo determinante del boost automotive.
+
+| Pos | ISIN | Nome | Semantic | Boost | Finale |
+| ---: | --- | --- | ---: | ---: | ---: |
+| 1 | PTSCT0AP0018 | TOYOTA CAETANO PORTUGAL | 0.290 | 0.550 | 0.840 |
+| 2 | DE0007664039 | VOLKSWAGEN AG-PREF | 0.271 | 0.550 | 0.821 |
+| 3 | DE0007100000 | MERCEDES-BENZ GROUP | 0.263 | 0.550 | 0.813 |
+
+#### Query tematica - prodotti di aziende farmaceutiche
+
+Valutazione: buona, con contributo determinante del boost farmaceutico.
+
+| Pos | ISIN | Nome | Semantic | Boost | Finale |
+| ---: | --- | --- | ---: | ---: | ---: |
+| 1 | DE000BAY0017 | BAYER AG | 0.353 | 0.550 | 0.903 |
+| 2 | US58933Y1055 | MERCK & CO. | 0.350 | 0.550 | 0.900 |
+| 3 | ATBIOGENA005 | BIOGENA GROUP INVEST | 0.343 | 0.550 | 0.893 |
+
+#### Query entita' - dammi le azioni di amazon
+
+Valutazione: insufficiente. Amazon viene trovata al secondo posto, preceduta da
+Spotify, senza alcuna regola business che spieghi o corregga il ranking.
+
+| Pos | ISIN | Nome | Semantic | Boost | Finale |
+| ---: | --- | --- | ---: | ---: | ---: |
+| 1 | LU1778762911 | SPOTIFY TECH. | 0.194 | 0 | 0.194 |
+| 2 | US0231351067 | AMAZON.COM INC | 0.167 | 0 | 0.167 |
+| 3 | LU2405144788 | CODERE ONLINE LUXEMBOURG | 0.161 | 0 | 0.161 |
+
+### Sintesi DistilUSE
+
+Punti forti:
+
+- risultati corretti su rischio basso e strumenti difensivi
+- buoni risultati tematici quando intervengono i boost business
+- query warm rapide, pur essendo il modello piu' pesante dei tre
+- cache SQLite completa e coerente a 768 dimensioni
+
+Punti deboli:
+
+- prima generazione piu' lenta, circa 12 minuti e 17 secondi
+- prima query piu' lenta dei due modelli da 384 dimensioni
+- ranking corporate debole
+- ranking sostenibilita' troppo dipendente dal flag business
+- ricerca Amazon errata, con Spotify davanti ad Amazon
+
 ## Confronto complessivo
 
 | Modello | Qualita' | Cache start | Prima query | Query warm | Stato |
 | --- | --- | ---: | ---: | ---: | --- |
 | MiniLM multilingual | Buona con limiti sulle entita' | 448 ms | 1327 ms | 19 ms | Baseline completata |
-| Multilingual E5 small | Migliore nei primi test | 628 ms | 1513 ms | 21 ms | Batteria completata |
-| DistilUSE multilingual | Da misurare | - | - | - | Non eseguito |
+| Multilingual E5 small | Migliore qualita' complessiva | 628 ms | 1513 ms | 21 ms | Batteria completata |
+| DistilUSE multilingual | Discontinua | 321 ms | 2024 ms | 32 ms | Batteria completata |
 
-E5 e' il candidato migliore dopo due modelli, soprattutto per la ricerca di
-entita' e la coerenza dei risultati senza boost. Il vincitore verra' comunque
-determinato solo dopo avere completato DistilUSE con la stessa batteria.
+### Esito finale
+
+Il modello consigliato per la POC e' **Multilingual E5 small**.
+
+Motivazioni:
+
+- e' l'unico che posiziona Amazon al primo posto senza regole dedicate
+- produce il ranking piu' coerente sulla query obbligazionaria corporate
+- riconosce meglio i prodotti esplicitamente sostenibili
+- mantiene prestazioni warm quasi identiche a MiniLM
+- usa vettori da 384 dimensioni, piu' compatti dei 768 valori di DistilUSE
+- la prima generazione e' circa due volte piu' veloce di DistilUSE
+
+MiniLM rimane una buona alternativa orientata alla velocita', ma ha maggiori
+limiti sulle entita'. DistilUSE non offre un miglioramento qualitativo che
+giustifichi il maggior costo di generazione, memoria e persistenza.
