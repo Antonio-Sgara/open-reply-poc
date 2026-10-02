@@ -40,6 +40,7 @@ import {
   EmbeddingModelKey,
   getEmbeddingModel
 } from "../../../semantic-search/embeddingModels";
+import { understandQueryForFilters } from "../../../query-understanding/queryUnderstandingService";
 import "./WidgetProductList.scss";
 
 const POC_API_HEALTH_URL = "http://127.0.0.1:3001/health";
@@ -105,215 +106,6 @@ const getBroadAdvancedSearchFilters = () => {
   return filters;
 };
 
-const normalizeQueryForFilters = (text: string) =>
-  text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-
-const queryHasAny = (query: string, terms: string[]) =>
-  terms.some(term => query.includes(term));
-
-const queryHasNegativeIntent = (query: string, terms: string[]) =>
-  terms.some(
-    term =>
-      query.includes(`senza ${term}`) ||
-      query.includes(`non ${term}`) ||
-      query.includes(`no ${term}`) ||
-      query.includes(`escludi ${term}`) ||
-      query.includes(`esclusi ${term}`) ||
-      query.includes(`escluse ${term}`)
-  );
-
-const setInferredFilter = (
-  inferredFilters: AdvancedSearchPanelFilterProps,
-  matchedRules: string[],
-  filterId: string,
-  value: string,
-  reason: string
-) => {
-  inferredFilters[filterId] = [value];
-  matchedRules.push(reason);
-};
-
-const inferAdvancedFiltersFromSemanticQuery = (query: string) => {
-  const normalizedQuery = normalizeQueryForFilters(query);
-  const inferredFilters: AdvancedSearchPanelFilterProps = {};
-  const matchedRules: string[] = [];
-
-  if (!normalizedQuery) {
-    return { inferredFilters, matchedRules };
-  }
-
-  const exactRiskMatch = normalizedQuery.match(
-    /\b(?:kiid|kid|srri|rischio)\s*(\d)\b/
-  );
-
-  if (exactRiskMatch) {
-    setInferredFilter(
-      inferredFilters,
-      matchedRules,
-      "riskKiid",
-      exactRiskMatch[1],
-      `SRRI ${exactRiskMatch[1]}`
-    );
-  } else if (
-    queryHasAny(normalizedQuery, [
-      "rischio basso",
-      "kiid basso",
-      "kid basso",
-      "srri basso",
-      "prudente",
-      "prudenti",
-      "difensivo",
-      "difensivi",
-      "conservativo",
-      "conservativi"
-    ])
-  ) {
-    setInferredFilter(
-      inferredFilters,
-      matchedRules,
-      "riskKiid",
-      "2",
-      "rischio basso -> SRRI 2"
-    );
-  } else if (
-    queryHasAny(normalizedQuery, [
-      "rischio medio",
-      "kiid medio",
-      "kid medio",
-      "srri medio",
-      "bilanciato",
-      "bilanciati"
-    ])
-  ) {
-    setInferredFilter(
-      inferredFilters,
-      matchedRules,
-      "riskKiid",
-      "4",
-      "rischio medio -> SRRI 4"
-    );
-  } else if (
-    queryHasAny(normalizedQuery, [
-      "rischio alto",
-      "kiid alto",
-      "kid alto",
-      "srri alto",
-      "dinamico",
-      "dinamici",
-      "aggressivo",
-      "aggressivi"
-    ])
-  ) {
-    setInferredFilter(
-      inferredFilters,
-      matchedRules,
-      "riskKiid",
-      "6",
-      "rischio alto -> SRRI 6"
-    );
-  }
-
-  if (queryHasAny(normalizedQuery, ["euro", "eur"])) {
-    setInferredFilter(inferredFilters, matchedRules, "currency", "EUR", "valuta EUR");
-  } else if (queryHasAny(normalizedQuery, ["dollaro", "dollari", "usd"])) {
-    setInferredFilter(inferredFilters, matchedRules, "currency", "USD", "valuta USD");
-  }
-
-  if (queryHasAny(normalizedQuery, ["fondo", "fondi"])) {
-    setInferredFilter(
-      inferredFilters,
-      matchedRules,
-      "productType",
-      productTypes.FUND,
-      "tipologia Fondo"
-    );
-  }
-
-  const booleanRules = [
-    {
-      filterId: "sustainable",
-      positiveTerms: ["sostenibile", "sostenibili", "esg"],
-      negativeTerms: ["sostenibile", "sostenibili", "esg"],
-      label: "sostenibile"
-    },
-    {
-      filterId: "ecoSustainable",
-      positiveTerms: [
-        "eco",
-        "ecosostenibile",
-        "eco sostenibile",
-        "ecosostenibili",
-        "eco sostenibili"
-      ],
-      negativeTerms: [
-        "eco",
-        "ecosostenibile",
-        "eco sostenibile",
-        "ecosostenibili",
-        "eco sostenibili"
-      ],
-      label: "eco-sostenibile"
-    },
-    {
-      filterId: "pai",
-      positiveTerms: ["pai"],
-      negativeTerms: ["pai"],
-      label: "PAI"
-    },
-    {
-      filterId: "coupon",
-      positiveTerms: ["cedola", "cedole", "cedolare", "distribuzione"],
-      negativeTerms: ["cedola", "cedole", "cedolare", "distribuzione"],
-      label: "cedola"
-    },
-    {
-      filterId: "bestInClass",
-      positiveTerms: ["bic", "best in class"],
-      negativeTerms: ["bic", "best in class"],
-      label: "BIC"
-    },
-    {
-      filterId: "isPlaced",
-      positiveTerms: ["collocato", "collocati", "collocamento"],
-      negativeTerms: ["collocato", "collocati", "collocamento"],
-      label: "collocamento"
-    }
-  ];
-
-  booleanRules.forEach(rule => {
-    const asksPositive = queryHasAny(normalizedQuery, rule.positiveTerms);
-    const asksNegative = queryHasNegativeIntent(normalizedQuery, rule.negativeTerms);
-
-    if (asksNegative) {
-      setInferredFilter(
-        inferredFilters,
-        matchedRules,
-        rule.filterId,
-        "false",
-        `${rule.label}: No`
-      );
-      return;
-    }
-
-    if (asksPositive) {
-      setInferredFilter(
-        inferredFilters,
-        matchedRules,
-        rule.filterId,
-        "true",
-        `${rule.label}: Si`
-      );
-    }
-  });
-
-  return { inferredFilters, matchedRules };
-};
-
 export interface FilterDTOParsingOptions {
   isSorting?: boolean;
   forceApply?: boolean;
@@ -364,6 +156,9 @@ const WidgetProductsList: FC<IProps> = ({
   const generatedEmbeddingSaveCountRef = React.useRef(0);
   const autoPopulatedFilterIdsRef = React.useRef<string[]>([]);
   const lastAutoFilterSignatureRef = React.useRef("");
+  const queryUnderstandingRequestIdRef = React.useRef(0);
+  const [isUnderstandingSemanticQuery, setIsUnderstandingSemanticQuery] =
+    useState(false);
   const semanticDatasetProducts = useMemo(
     () => (pocApiProducts.length > 0 ? pocApiProducts : []),
     [pocApiProducts]
@@ -774,54 +569,85 @@ const WidgetProductsList: FC<IProps> = ({
   );
 
   const applySemanticQueryFilters = useCallback(
-    (query: string) => {
+    async (query: string) => {
       if (!query.trim() && autoPopulatedFilterIdsRef.current.length === 0) {
         return;
       }
 
-      const { inferredFilters, matchedRules } =
-        inferAdvancedFiltersFromSemanticQuery(query);
-      const inferredFilterIds = Object.keys(inferredFilters);
-      const signature = JSON.stringify({
-        query: normalizeQueryForFilters(query),
-        inferredFilters
-      });
+      const requestId = ++queryUnderstandingRequestIdRef.current;
+      setIsUnderstandingSemanticQuery(!!query.trim());
+      try {
+        const understanding = await understandQueryForFilters(query);
 
-      if (signature === lastAutoFilterSignatureRef.current) {
-        return;
-      }
-      lastAutoFilterSignatureRef.current = signature;
+        if (requestId !== queryUnderstandingRequestIdRef.current) {
+          return;
+        }
 
-      const nextActiveFilters = { ...activeFilters } as any;
-      autoPopulatedFilterIdsRef.current.forEach(filterId => {
-        nextActiveFilters[filterId] = [];
-      });
-
-      inferredFilterIds.forEach(filterId => {
-        nextActiveFilters[filterId] = inferredFilters[filterId];
-      });
-
-      autoPopulatedFilterIdsRef.current = inferredFilterIds;
-
-      if (inferredFilterIds.length === 0) {
-        semanticDebugLog("Query semantica senza filtri avanzati riconosciuti", {
-          query
+        const { inferredFilters, matchedRules, matches } = understanding;
+        const inferredFilterIds = Object.keys(inferredFilters);
+        const signature = JSON.stringify({
+          query: understanding.normalizedQuery,
+          inferredFilters
         });
-      } else {
-        semanticDebugGroup("Filtri avanzati popolati dalla query semantica", () => {
-          console.log("query", query);
-          console.table(
-            inferredFilterIds.map(filterId => ({
-              filterId,
-              value: inferredFilters[filterId]?.join(", ")
-            }))
+
+        if (signature === lastAutoFilterSignatureRef.current) {
+          return;
+        }
+        lastAutoFilterSignatureRef.current = signature;
+
+        const nextActiveFilters = { ...activeFilters } as any;
+        autoPopulatedFilterIdsRef.current.forEach(filterId => {
+          nextActiveFilters[filterId] = [];
+        });
+
+        inferredFilterIds.forEach(filterId => {
+          nextActiveFilters[filterId] = inferredFilters[filterId];
+        });
+
+        autoPopulatedFilterIdsRef.current = inferredFilterIds;
+
+        if (inferredFilterIds.length === 0) {
+          semanticDebugLog("Query semantica senza filtri avanzati riconosciuti", {
+            query,
+            source: understanding.source,
+            durationMs: Number(understanding.durationMs.toFixed(1)),
+            error: understanding.error
+          });
+        } else {
+          semanticDebugGroup(
+            "Filtri avanzati popolati dalla query semantica",
+            () => {
+              console.log("query", query);
+              console.log("source", understanding.source);
+              console.log("model", understanding.modelId ?? "solo regole");
+              console.log(
+                "durationMs",
+                Number(understanding.durationMs.toFixed(1))
+              );
+              console.table(
+                matches.map(match => ({
+                  filterId: match.filterId,
+                  value: match.value,
+                  source: match.source,
+                  confidence:
+                    match.confidence === undefined
+                      ? "regola esatta"
+                      : Number(match.confidence.toFixed(4)),
+                  reason: match.reason
+                }))
+              );
+              console.log("matchedRules", matchedRules);
+            }
           );
-          console.log("matchedRules", matchedRules);
-        });
-      }
+        }
 
-      setActiveFilters(nextActiveFilters);
-      reloadOptionsBasedOnFilters(nextActiveFilters, undefined, true);
+        setActiveFilters(nextActiveFilters);
+        reloadOptionsBasedOnFilters(nextActiveFilters, undefined, true);
+      } finally {
+        if (requestId === queryUnderstandingRequestIdRef.current) {
+          setIsUnderstandingSemanticQuery(false);
+        }
+      }
     },
     [activeFilters]
   );
@@ -1024,8 +850,8 @@ const WidgetProductsList: FC<IProps> = ({
     if (isShowingSecondary) return;
 
     const timeout = window.setTimeout(() => {
-      applySemanticQueryFilters(semanticQuery);
-    }, 500);
+      void applySemanticQueryFilters(semanticQuery);
+    }, 750);
 
     return () => window.clearTimeout(timeout);
   }, [semanticQuery, isShowingSecondary, applySemanticQueryFilters]);
@@ -1227,14 +1053,16 @@ const WidgetProductsList: FC<IProps> = ({
           data-index-duration-ms={indexDurationMs ?? ""}
           data-search-duration-ms={searchDurationMs ?? ""}
           data-semantic-products-count={semanticDatasetProducts.length}
+          aria-busy={isUnderstandingSemanticQuery}
           onSubmit={event => {
             event.preventDefault();
+            if (isUnderstandingSemanticQuery) return;
             semanticDebugLog("Submit form ricerca semantica", {
               semanticQuery,
               loadedTableProducts: products?.length ?? 0,
               semanticDatasetProducts: semanticDatasetProducts.length
             });
-            applySemanticQueryFilters(semanticQuery);
+            void applySemanticQueryFilters(semanticQuery);
             searchSemantically();
           }}
         >
@@ -1250,7 +1078,9 @@ const WidgetProductsList: FC<IProps> = ({
               id="semantic-embedding-model"
               className="widgetProductsList__semanticModelSelect"
               value={selectedEmbeddingModelKey}
-              disabled={isIndexingSemanticProducts}
+              disabled={
+                isIndexingSemanticProducts || isUnderstandingSemanticQuery
+              }
               onChange={event => {
                 clearSemanticSearch();
                 setSelectedEmbeddingModelKey(
@@ -1274,7 +1104,9 @@ const WidgetProductsList: FC<IProps> = ({
               onChange={event => setSemanticQuery(event.target.value)}
               placeholder="Es. fondi sostenibili con rischio basso in euro"
               disabled={
-                isIndexingSemanticProducts || !semanticDatasetProducts.length
+                isIndexingSemanticProducts ||
+                isUnderstandingSemanticQuery ||
+                !semanticDatasetProducts.length
               }
             />
             <button
@@ -1282,6 +1114,7 @@ const WidgetProductsList: FC<IProps> = ({
               type="submit"
               disabled={
                 isIndexingSemanticProducts ||
+                isUnderstandingSemanticQuery ||
                 !semanticDatasetProducts.length ||
                 !semanticQuery.trim()
               }
@@ -1293,6 +1126,7 @@ const WidgetProductsList: FC<IProps> = ({
                 className="widgetProductsList__semanticSearchButton widgetProductsList__semanticSearchButton--secondary"
                 type="button"
                 onClick={clearSemanticSearch}
+                disabled={isUnderstandingSemanticQuery}
               >
                 Reset
               </button>
@@ -1301,10 +1135,25 @@ const WidgetProductsList: FC<IProps> = ({
           <div className="widgetProductsList__semanticSearchStatus">
             {isIndexingSemanticProducts
               ? `Preparazione indice ${selectedEmbeddingModel.label}...`
+              : isUnderstandingSemanticQuery
+                ? "Interpretazione dei filtri dalla query..."
               : isSemanticSearchActive
                 ? `${semanticResults.length} risultati su ${semanticDatasetProducts.length} prodotti · ricerca ${Math.round(searchDurationMs ?? 0)} ms`
                 : `${selectedEmbeddingModel.label} · ${semanticDatasetProducts.length} prodotti · indice ${Math.round(indexDurationMs ?? 0)} ms`}
           </div>
+          {isUnderstandingSemanticQuery && (
+            <div
+              className="widgetProductsList__semanticSearchLoader"
+              role="status"
+              aria-live="polite"
+            >
+              <span
+                className="widgetProductsList__semanticSearchSpinner"
+                aria-hidden="true"
+              />
+              <span>Analisi della richiesta e selezione dei filtri...</span>
+            </div>
+          )}
         </form>
       )}
       {!isShowingSecondary && isSemanticSearchActive && semanticResults.length > 0 && (
